@@ -6,13 +6,13 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 
 data class Entry(
-  val seq: String,
-  val seqtype: String,
-  val zone: String,
-  val rating: String,
-  val header: String,
-  val tags: List<String>,
-  val body: String
+    val seq: String,
+    val seqtype: String,
+    val zone: String,
+    val rating: String,
+    val header: String,
+    val tags: List<String>,
+    val body: String
 )
 
 val linefeed = System.getProperty("line.separator")
