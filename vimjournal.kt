@@ -12,14 +12,37 @@ data class Entry(
   val body: String
 )
 
-val tagChars = "/+#=!>@:"
+val tagChars = "/+#=!>@:&"
+val headerRegex = Regex("^[0-9X_]{13}[.! ]... .│.*\n?$")
+val tagStartRegex = Regex("(^| )[$tagChars]([^$tagChars │]|\\s*$)")
+val skipsRegex = Regex("&[0-9]*")
 val linefeed = System.getProperty("line.separator")
 
 fun main() {
     parse(System.`in`.bufferedReader())
-      .filter { it.seq > "20220617" }
+      .filter { it.seq > "20220625" }
       .sortedBy { it.seq }
       .forEach { it.print() }
+}
+
+fun def_getSkips() {
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ ").getSkips() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ &").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ & ").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world").getSkips() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #foo").getSkips() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #foo").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &2").getSkips() == 2 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo").getSkips() == 2 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo &3").getSkips() == 3 }
+}
+fun Entry.getSkips(): Int {
+    val skipsTag = tags.filter { it.matches(skipsRegex) }.lastOrNull()
+    if (skipsTag == null) return 0
+    if (skipsTag.length == 1) return 1
+    return skipsTag.substring(1).toInt()
 }
 
 fun def_parse() {
@@ -68,7 +91,7 @@ fun def_isJournalHeader() {
     test { ! "foo".isJournalHeader() }
     test { ! "".isJournalHeader() }
 }
-fun String.isJournalHeader(): Boolean = matches(Regex("^[0-9X_]{13}[.! ]... .│.*\n?$"));
+fun String.isJournalHeader(): Boolean = matches(headerRegex);
 
 fun def_parseEntry() {
     test { parseEntry("XXXXXXXX_XXXX ABC  │") == Entry("XXXXXXXX_XXXX", "", "ABC", "", "", listOf(), "") }
@@ -83,12 +106,17 @@ fun def_parseEntry() {
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar ").tags == listOf("#tag", "!bar") }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar").header == "hello world ##tag" }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar").tags == listOf("!bar") }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").header == "hello world" }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").header == "hello & world" }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").header == "hello world &" }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").header == "hello world" }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").header == "hello world" }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").header == "🩢🩣🩤" }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").tags == listOf("#tag", "!bar") }
 }
 fun parseEntry(header: String) = parseEntry(header, "")
 fun parseEntry(header: String, body: String): Entry {
-    val tagIndex = header.indexOf(Regex(" [$tagChars][^│$tagChars]")) ?: header.lastIndex
+    val tagIndex = header.indexOf(tagStartRegex) ?: header.lastIndex
     return Entry(
         seq = header.slice(0..12),
         seqtype = header.slice(13..13).trim(),
@@ -108,11 +136,14 @@ fun def_parseTags() {
     test { parseTags("#foo   !bar ") == listOf("#foo", "!bar") }
     test { parseTags("#foo bar !baz") == listOf("#foo bar", "!baz") }
     test { parseTags("#foo ##bar !baz") == listOf("#foo ##bar", "!baz") }
+    test { parseTags("&1 #foo bar !baz") == listOf("&1", "#foo bar", "!baz") }
+    test { parseTags("#foo bar !baz &") == listOf("#foo bar", "!baz", "&") }
+    test { parseTags("#foo bar !baz & ") == listOf("#foo bar", "!baz", "&") }
+    test { parseTags("#foo bar !baz &2") == listOf("#foo bar", "!baz", "&2") }
     test { parseTags("#foo bar !baz :https://wikipedia.org/foo") == listOf("#foo bar", "!baz", ":https://wikipedia.org/foo") }
-    //test { parseTags("#foo bar !baz &") == listOf("#foo bar", "!baz", "&") }
 }
 fun parseTags(input: String): List<String> {
-    var matches = Regex("(^| )[$tagChars][^$tagChars]").findAll(input).toList()
+    var matches = tagStartRegex.findAll(input).toList()
     return matches.mapIndexed { i, it ->
         var stop = if (i < matches.lastIndex) matches[i + 1].range.start - 1 else input.lastIndex
         input.slice(it.range.start..stop).trim()
@@ -147,5 +178,6 @@ fun test() {
     def_parseTags()
     def_parseEntry()
     def_parse()
+    def_countSkips()
 }
 
