@@ -4,7 +4,8 @@ import java.io.BufferedReader
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-
+import java.time.temporal.ChronoUnit.MINUTES
+  
 data class Entry(
     val seq: String,
     val seqtype: String,
@@ -14,12 +15,14 @@ data class Entry(
     val tags: List<String>,
     val body: String
 )
+class EntrySequenceException(message: String): Exception(message)
 
 val linefeed = System.getProperty("line.separator")
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 val headerRegex = Regex("^[0-9X_]{13}[.! ]... .│.*\n?$")
 val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars]([^$tagChars │]|\\s*$)")
+val timeSpentRegex = Regex("(\\+[0-9]+|/.*!)")
 val skipsRegex = Regex("&[0-9]*")
 
 fun main() {
@@ -29,17 +32,102 @@ fun main() {
       .forEach { it.print() }
 }
 
+fun def_calculateSpentTime() {
+    test { parse("").calculateSpentTime("") == 0}
+    test { parse("20000101_0000 ABC  │ =p1").calculateSpentTime("=p1") == 0}
+    test { parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("") == 0 }
+    test { parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("=p2") == 0 }
+    test { parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("=p1") == 15 }
+    test { parse("""
+        20000101_0000 ABC  │ write code /code =p1
+        20000101_0015 ABC  │ debug code /debug =p1
+        20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
+        .calculateSpentTime("=p1") == 30 }
+
+    test { parse("""
+        20000101_0030 ABC  │ switch projects /code +10 =p2
+        20000101_0145 ABC  │ debug new project /debug =p2
+        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+        .calculateSpentTime("=p2") == 55 }
+
+    test { parse("""
+        20000102_1030 ABC  │ get up /wake &
+        20000102_1045 ABC  │ recall my dreams /recall
+        20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
+        .calculateSpentTime("/wake") == 45 }
+
+    test { parse("""
+        20000102_1030 ABC  │ get up /wake +5 &
+        20000102_1045 ABC  │ recall my dreams /recall
+        20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
+        .calculateSpentTime("/wake") == 5 }
+
+    test { parse("""
+        20000102_1030 ABC  │ get up /wake &2
+        20000102_1045 ABC  │ recall my dreams /recall
+        20000102_1115 ABC  │ stretch /stretch
+        20000102_1145 ABC  │ make pancakes /cook""".trimIndent())
+        .calculateSpentTime("/wake") == 75 }
+
+    testThrows<EntrySequenceException> { parse("""
+        20000102_1200 ABC  │ start coding /code =p3 &
+        20000102_1230 ABC  │ research kotlin /search =p3
+        20000102_1300 ABC  │ make a sandwich /cook""".trimIndent())
+        .calculateSpentTime("=p3") }
+}
+fun Sequence<Entry>.calculateSpentTime(tag: String): Int = calculateSpentTime { it.tags.contains(tag) }
+fun Sequence<Entry>.calculateSpentTime(filter: (Entry) -> Boolean): Int {
+    var total = 0
+    var pop = true
+    val i = iterator()
+    lateinit var current: Entry
+    while (i.hasNext()) {
+        if (pop) current = i.next(); pop = true
+        if (filter.invoke(current)) {
+            val timeSpent = current.getTimeSpent()
+            if (timeSpent != null) {
+                total += timeSpent
+            } else {
+                val startTime = current.getDateTime()
+                val skips = current.getSkips()
+                for (skip in 0 .. skips) { 
+                    if (i.hasNext()) {
+                        current = i.next() 
+                        if (skip < skips && filter.invoke(current))
+                            throw EntrySequenceException("Entry overlaps: " + current)
+                    } else {
+                        break
+                    }
+                }
+                total += startTime.until(current.getDateTime(), MINUTES).toInt()
+                pop = false
+            }
+        }
+    }
+    return total;
+}
+
 fun def_getDateTime() {
-    test { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() == null }
-    test { parseEntry("20000101_XXXX ABC  │ ").getDateTime() == null }
+    testThrows<DateTimeParseException> { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() }
+    testThrows<DateTimeParseException> { parseEntry("20000101_XXXX ABC  │ ").getDateTime() }
     test { parseEntry("20000101_0000 ABC  │ ").getDateTime() == LocalDateTime.of(2000, 1, 1, 0, 0) }
 }
-fun Entry.getDateTime(): LocalDateTime? {
-    try {
-        return LocalDateTime.parse(seq, dateTimeFormat)
-    } catch (e: DateTimeParseException) {
-        return null;
-    }
+fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
+
+fun def_getTimeSpent() {
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ ").getTimeSpent() == null }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ +0").getTimeSpent() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ /code!").getTimeSpent() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ /code +15").getTimeSpent() == 15 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ /code +15 +30").getTimeSpent() == 30 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ +15 /code!").getTimeSpent() == 0 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ /code! +15").getTimeSpent() == 15 }
+}
+fun Entry.getTimeSpent(): Int? {
+    val timeSpentTag = tags.filter { it.matches(timeSpentRegex) }.lastOrNull()
+    if (timeSpentTag == null) return null
+    if (timeSpentTag.endsWith("!")) return 0
+    return timeSpentTag.substring(1).toInt()
 }
 
 fun def_getSkips() {
@@ -188,6 +276,14 @@ fun String.indexOf(regex: Regex): Int? = regex.find(this)?.range?.start
 
 // kotlin.test not on the default classpath, so use our own assert function
 fun test(code: () -> Boolean) { if (! code.invoke()) throw AssertionError() }
+inline fun <reified T: Throwable> testThrows(code: () -> Unit) { 
+    try { 
+        code.invoke() 
+        throw AssertionError("Exception expected")
+    } catch (e: Throwable) { 
+        if (!(e is T)) throw e
+    } 
+}
 
 // run all the tests
 fun test() {
@@ -195,8 +291,9 @@ fun test() {
     def_parseTags()
     def_parseEntry()
     def_parse()
-    def_countSkips()
+    def_getSkips()
     def_getDateTime()
+    def_getTimeSpent()
     def_calculateSpentTime()
 }
 
