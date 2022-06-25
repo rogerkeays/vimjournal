@@ -1,6 +1,9 @@
 //usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && java -cp $CLASSPATH:$0.jar VimjournalKt $@; exit 0
 
 import java.io.BufferedReader
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 
 data class Entry(
   val seq: String,
@@ -12,17 +15,31 @@ data class Entry(
   val body: String
 )
 
-val tagChars = "/+#=!>@:&"
+val linefeed = System.getProperty("line.separator")
+val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 val headerRegex = Regex("^[0-9X_]{13}[.! ]... .│.*\n?$")
+val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars]([^$tagChars │]|\\s*$)")
 val skipsRegex = Regex("&[0-9]*")
-val linefeed = System.getProperty("line.separator")
 
 fun main() {
     parse(System.`in`.bufferedReader())
       .filter { it.seq > "20220625" }
       .sortedBy { it.seq }
       .forEach { it.print() }
+}
+
+fun def_getDateTime() {
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() == null }
+    test { parseEntry("20000101_XXXX ABC  │ ").getDateTime() == null }
+    test { parseEntry("20000101_0000 ABC  │ ").getDateTime() == LocalDateTime.of(2000, 1, 1, 0, 0) }
+}
+fun Entry.getDateTime(): LocalDateTime? {
+    try {
+        return LocalDateTime.parse(seq, dateTimeFormat)
+    } catch (e: DateTimeParseException) {
+        return null;
+    }
 }
 
 fun def_getSkips() {
@@ -32,8 +49,8 @@ fun def_getSkips() {
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world").getSkips() == 0 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").getSkips() == 1 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #foo").getSkips() == 0 }
-    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &").getSkips() == 1 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #foo").getSkips() == 1 }
+    test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &").getSkips() == 1 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &2").getSkips() == 2 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo").getSkips() == 2 }
     test { parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo &3").getSkips() == 3 }
@@ -179,5 +196,7 @@ fun test() {
     def_parseEntry()
     def_parse()
     def_countSkips()
+    def_getDateTime()
+    def_calculateSpentTime()
 }
 
