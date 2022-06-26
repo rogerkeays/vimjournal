@@ -61,11 +61,16 @@ fun def_parseTags() {
     parseTags("#foo   !bar ") returns listOf("#foo", "!bar")
     parseTags("#foo bar !baz") returns listOf("#foo bar", "!baz")
     parseTags("#foo ##bar !baz") returns listOf("#foo ##bar", "!baz")
-    parseTags("&1 #foo bar !baz") returns listOf("&1", "#foo bar", "!baz")
+    parseTags("& #foo !bar") returns listOf("&", "#foo", "!bar")
+    parseTags("&1 #foo !bar") returns listOf("&1", "#foo", "!bar")
+    parseTags("#foo & !bar") returns listOf("#foo", "&", "!bar")
+    parseTags("#foo & bar") returns listOf("#foo & bar")
+    parseTags("#foo & bar !baz") returns listOf("#foo & bar","!baz")
     parseTags("#foo bar !baz &") returns listOf("#foo bar", "!baz", "&")
     parseTags("#foo bar !baz & ") returns listOf("#foo bar", "!baz", "&")
     parseTags("#foo bar !baz &2") returns listOf("#foo bar", "!baz", "&2")
     parseTags("#foo bar !baz :https://wikipedia.org/foo") returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
+    parseTags("#foo bar :https://wikipedia.org/foo !baz") returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
 }
 fun parseTags(input: String): List<String> {
     var matches = tagStartRegex.findAll(input).toList()
@@ -75,7 +80,7 @@ fun parseTags(input: String): List<String> {
     }
 }
 val tagChars = "/+#=!>@:&"
-val tagStartRegex = Regex("(^| )[$tagChars]([^$tagChars │]|\\s*$)")
+val tagStartRegex = Regex("(^| )[$tagChars]([^ │$tagChars]|(?=\\s+[$tagChars])|\\s*$)")
 
 fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "", "ABC", "", "", listOf(), "")
@@ -83,20 +88,20 @@ fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX.ABC +│").rating returns "+"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world ").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ").tags returns listOf<String>()
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar ").tags returns listOf("#tag", "!bar")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar ").tags returns listOf("#tag", "!bar")
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar").header returns "hello world ##tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar").tags returns listOf("!bar")
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !!bar").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").header returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").header returns "hello world &"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world").header returns "hello & world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").header returns "hello & world"
     parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").header returns "🩢🩣🩤"
-    parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").tags returns listOf("#tag", "!bar")
 }
 fun parseEntry(header: String) = parseEntry(header, "")
 fun parseEntry(header: String, body: String): Entry {
@@ -172,7 +177,7 @@ fun def_getSkips() {
     parseEntry("XXXXXXXX_XXXX ABC  │ & ").getSkips() returns 1
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world").getSkips() returns 0
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #foo").getSkips() returns 0
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #foo").getSkips() returns 1
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #foo").getSkips() returns 1
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &").getSkips() returns 1
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &2").getSkips() returns 2
