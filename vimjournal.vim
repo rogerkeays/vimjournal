@@ -38,16 +38,19 @@ autocmd BufRead *.log inoremap <C-z> ✔
 
 "
 " tagging scheme:
-"   / category        (file)
-"   + person          (global)
-"   # topic           (global)
-"   = project         (global)
-"   ! problem, goal   (global)
-"   > context         (entry)
-"   @ place           (global)
-"   : data, url       (entry)
+"   / category          (file)
+"   + person, duration  (global)
+"   # topic             (global)
+"   = project           (global)
+"   ! problem, goal     (global)
+"   > context           (entry)
+"   @ place             (global)
+"   : data, url         (entry)
+"   & skips             (entry)
 "
-autocmd BufRead *.log syn match Tags " [/+#=!>@:][^/+#=!>@: ].*" contained
+
+" space then a tag character followed by either a non-tag, whitespace and then a new tag, or end of line
+autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ │/+#=!>@:&]\|\( \+[/+#=!>@:&]\)\@=\| *$\).*" contained
 
 autocmd BufRead *.log syn keyword Bar │ contained
 autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}[!. ]... .*\ze.[│|]" contained
