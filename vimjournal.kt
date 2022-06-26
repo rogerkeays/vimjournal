@@ -292,7 +292,7 @@ inline fun <reified T: Throwable> testThrows(code: () -> Unit) {
         code.invoke() 
         throw AssertionError("Exception expected")
     } catch (e: Throwable) { 
-        if (!(e is T)) throw e
+        if (e !is T) throw e
     } 
 }
 
