@@ -33,19 +33,19 @@ fun Entry.print() {
 }
 
 fun def_isJournalHeader() {
-    "XXXXXXXX_XXXX ABC  │".isJournalHeader() returns true
     "00000000_0000 ABC  │".isJournalHeader() returns true
-    "20210120_2210 KEP  │".isJournalHeader() returns true
-    "20210120_2210 KEP  │ ".isJournalHeader() returns true
-    "20210120_2210 KEP  │ hello world".isJournalHeader() returns true
-    "20210120_2210 KEP *│ hello world".isJournalHeader() returns true
-    "20210120_2210 KEP  │ hello world #truth".isJournalHeader() returns true
-    "20210120_2210.KEP  │ hello world".isJournalHeader() returns true
-    "20210120_2210 KEP  │ hello world\n".isJournalHeader() returns true
-    "XXXXXXXX_XXXY XXX  │".isJournalHeader() returns false
-    "202101202210 KEP  │ hello world".isJournalHeader() returns false
-    "20210120_2210 KEP │ hello world".isJournalHeader() returns false
-    "20210120_2210 KEP   hello world".isJournalHeader() returns false
+    "0000XXXX_XXXX ABC  │".isJournalHeader() returns true
+    "20210120_2210 ABC  │".isJournalHeader() returns true
+    "20210120_2210 ABC  │ ".isJournalHeader() returns true
+    "20210120_2210 ABC  │ hello world".isJournalHeader() returns true
+    "20210120_2210.ABC  │ hello world".isJournalHeader() returns true
+    "20210120_2210 ABC *│ hello world".isJournalHeader() returns true
+    "20210120_2210 ABC  │ hello world\n".isJournalHeader() returns true
+    "20210120_2210 ABC  │ hello world #truth".isJournalHeader() returns true
+    "0000XXXX_YYYY ABC  │".isJournalHeader() returns false
+    "20210120_2210 ABC │ hello world".isJournalHeader() returns false
+    "20210120_2210 ABC   hello world".isJournalHeader() returns false
+    "202101202210 ABC  │ hello world".isJournalHeader() returns false
     "foo".isJournalHeader() returns false
     "".isJournalHeader() returns false
 }
