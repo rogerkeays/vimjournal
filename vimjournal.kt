@@ -100,7 +100,7 @@ fun def_parseEntry() {
 }
 fun parseEntry(header: String) = parseEntry(header, "")
 fun parseEntry(header: String, body: String): Entry {
-    val tagIndex = header.indexOf(tagStartRegex) ?: header.lastIndex
+    val tagIndex = tagStartRegex.find(header)?.range?.start ?: header.lastIndex
     return Entry(
         seq = header.slice(0..12),
         seqtype = header.slice(13..13).trim(),
@@ -280,9 +280,6 @@ fun test() {
     def_getSkips()
     def_calculateSpentTime()
 }
-
-// the first index matching the given regexp, or null if none is found
-fun String.indexOf(regex: Regex): Int? = regex.find(this)?.range?.start
 
 // kotlin.test not on the default classpath, so use our own test functions
 infix fun Any?.returns(result: Any?) { if (this != result) throw AssertionError() }
