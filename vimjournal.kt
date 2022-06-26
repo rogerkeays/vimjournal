@@ -142,9 +142,9 @@ fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
 val linefeed = System.getProperty("line.separator")
 
 fun def_getDateTime() {
-    { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class
-    { parseEntry("20000101_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class
-    parseEntry("20000101_0000 ABC  │ ").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
+    parseEntry("20000101_0000 ABC  │ ").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
+    { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
+    { parseEntry("20000101_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
 }
 fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
