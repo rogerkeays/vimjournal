@@ -282,6 +282,33 @@ fun MutableMap<String, Int>.inc(tags: List<String>, amount: Int) {
     for (tag in tags) put(tag, get(tag)?.plus(amount) ?: amount)
 }
 
+fun def_collectTimeSpentOn() {
+    parse("20000101_0000 ABC  │ =p1").collectTimeSpentOn("=p1")["=p1"] returns 0
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p1")["=p1"] returns 15
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p2")["=p1"] returns null
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p1")["=p2"] returns null
+    parse("""
+        20000101_0000 ABC  │ write code /code =p1
+        20000101_0015 ABC  │ debug code /debug =p1
+        20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
+        .collectTimeSpentOn("=p1")["/code"] returns 15
+
+    parse("""
+        20000101_0030 ABC  │ switch projects /code +10 =p2
+        20000101_0145 ABC  │ debug new project /debug =p2.x
+        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+        .collectTimeSpentOn("=p2")["=p2.x"] returns 45
+
+    parse("""
+        20000101_0030 ABC  │ switch projects /code +10 =p2
+        20000101_0145 ABC  │ debug new project /debug =p2x
+        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+        .collectTimeSpentOn("=p2")["=p2x"] returns null
+}
+fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
+    entry.tags.find { it == tag || it.startsWith("$tag.") } != null
+}
+
 fun main() {
     parse(System.`in`.bufferedReader())
       .filter { it.seq > "20220625" }
@@ -299,6 +326,7 @@ fun test() {
     def_getTimeSpent()
     def_getSkips()
     def_collectTimeSpent()
+    def_collectTimeSpentOn()
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
