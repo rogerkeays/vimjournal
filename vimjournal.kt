@@ -287,7 +287,9 @@ fun test() {
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
-infix fun Any?.returns(result: Any?) { if (this != result) throw AssertionError() }
+infix fun Any?.returns(result: Any?) { 
+    if (this != result) throw AssertionError("Expected: $result, got $this") 
+}
 infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
     try { 
         invoke() 
