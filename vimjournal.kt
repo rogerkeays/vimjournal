@@ -203,56 +203,56 @@ fun Entry.getSkips(): Int {
 }
 val skipsRegex = Regex("&[0-9]*")
 
-fun def_collectSpentTime() {
-    parse("").collectSpentTime() returns mapOf<String,Int>()
-    parse("20000101_0000 ABC  │ =p1").collectSpentTime()["=p1"] returns 0
-    parse("20000101_0000 ABC  │ =p1 +15").collectSpentTime()["=p1"] returns 15
-    parse("20000101_0000 ABC  │ =p1 +15").collectSpentTime()["=p2"] returns null
+fun def_collectTimeSpent() {
+    parse("").collectTimeSpent() returns mapOf<String,Int>()
+    parse("20000101_0000 ABC  │ =p1").collectTimeSpent()["=p1"] returns 0
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p1"] returns 15
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p2"] returns null
     parse("""
         20000101_0000 ABC  │ write code /code =p1
         20000101_0015 ABC  │ debug code /debug =p1
         20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
-        .collectSpentTime()["=p1"] returns 30
+        .collectTimeSpent()["=p1"] returns 30
 
     parse("""
         20000101_0030 ABC  │ switch projects /code +10 =p2
         20000101_0145 ABC  │ debug new project /debug =p2
         20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
-        .collectSpentTime()["=p2"] returns 55
+        .collectTimeSpent()["=p2"] returns 55
 
     parse("""
         20000102_1030 ABC  │ get up /wake &
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
-        .collectSpentTime()["/wake"] returns 45
+        .collectTimeSpent()["/wake"] returns 45
 
     parse("""
         20000102_1030 ABC  │ get up /wake +5 &
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
-        .collectSpentTime()["/wake"] returns 5
+        .collectTimeSpent()["/wake"] returns 5
 
     parse("""
         20000102_1030 ABC  │ get up /wake &2
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ stretch /stretch
         20000102_1145 ABC  │ make pancakes /cook""".trimIndent())
-        .collectSpentTime()["/wake"] returns 75
+        .collectTimeSpent()["/wake"] returns 75
 
     parse("""
         20000102_1200 ABC  │ start coding /code =p3 &
         20000102_1230 ABC  │ research kotlin /search =p3
         20000102_1300 ABC  │ make a sandwich /cook""".trimIndent())
-        .collectSpentTime()["=p3"] returns 90
+        .collectTimeSpent()["=p3"] returns 90
 
     parse("""
         20000102_1200 ABC  │ start coding /code =p3 &2
         20000102_1230 ABC  │ research kotlin /search =p3
         20000102_1300 ABC  │ make a sandwich /cook
         20000102_1400 ABC  │ surf the internet /trawl""".trimIndent())
-        .collectSpentTime()["=p3"] returns 150
+        .collectTimeSpent()["=p3"] returns 150
 }
-fun Sequence<Entry>.collectSpentTime(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
+fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf<String, Int>().toSortedMap()
     val i = iterator()
     val window = LinkedList<Entry>()
@@ -298,7 +298,7 @@ fun test() {
     def_getDateTime()
     def_getTimeSpent()
     def_getSkips()
-    def_collectSpentTime()
+    def_collectTimeSpent()
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
