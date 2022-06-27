@@ -1,6 +1,7 @@
 //usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && java -cp $CLASSPATH:$0.jar VimjournalKt $@; exit 0
 
 import java.io.BufferedReader
+import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -138,6 +139,7 @@ fun def_parse() {
     parse("XXXXXXXX_XXXX ABC  │ hello world\n\nbody #notag goes here\n").first().tags.isEmpty() returns true
     parse("// vim: modeline\nXXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().header returns "hello world"
 }
+fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
 fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
     var header = input.readLine()
@@ -204,10 +206,13 @@ fun Entry.getSkips(): Int {
 val skipsRegex = Regex("&[0-9]*")
 
 fun def_collectTimeSpent() {
-    parse("").collectTimeSpent() returns mapOf<String,Int>()
+    parse("").collectTimeSpent() returns mapOf("" to 0)
+    parse("20000101_0000 ABC  │ =p1").collectTimeSpent()[""] returns 0
     parse("20000101_0000 ABC  │ =p1").collectTimeSpent()["=p1"] returns 0
     parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p1"] returns 15
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()[""] returns 15
     parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p2"] returns null
+    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent().containsKey("+15") returns false
     parse("""
         20000101_0000 ABC  │ write code /code =p1
         20000101_0015 ABC  │ debug code /debug =p1
@@ -253,7 +258,7 @@ fun def_collectTimeSpent() {
         .collectTimeSpent()["=p3"] returns 150
 }
 fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
-    var totals = mutableMapOf<String, Int>().toSortedMap()
+    var totals = mutableMapOf("" to 0).toSortedMap()
     val i = iterator()
     val window = LinkedList<Entry>()
     if (i.hasNext()) window.add(i.next())
@@ -262,15 +267,15 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
         if (filter.invoke(current)) {
             var timeSpent = current.getTimeSpent()
             if (timeSpent != null) {
-                totals.inc(current.tags, timeSpent)
+                totals.inc(current, timeSpent)
             } else {
                 try {
                     val consume = current.getSkips() + 1
                     while (consume > window.size) { window.add(i.next()) }
                     timeSpent = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
-                    totals.inc(current.tags, timeSpent)
+                    totals.inc(current, timeSpent)
                 } catch (e: NoSuchElementException) {
-                    totals.inc(current.tags, 0)
+                    totals.inc(current, 0)
                 }
             }
         }
@@ -278,9 +283,16 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
     }
     return totals;
 }
-fun MutableMap<String, Int>.inc(tags: List<String>, amount: Int) {
-    for (tag in tags) put(tag, get(tag)?.plus(amount) ?: amount)
+fun MutableMap<String, Int>.inc(entry: Entry, amount: Int) {
+    for (tag in entry.tags) {
+        if (!tag.matches(dontIncRegex)) {
+            put(tag, get(tag)?.plus(amount) ?: amount)
+        }
+    }
+    put(entry.zone, get(entry.zone)?.plus(amount) ?: 0)
+    put("", get("")?.plus(amount) ?: 0)
 }
+val dontIncRegex = Regex("^\\+[0-9]+")
 
 fun def_collectTimeSpentOn() {
     parse("20000101_0000 ABC  │ =p1").collectTimeSpentOn("=p1")["=p1"] returns 0
@@ -307,6 +319,12 @@ fun def_collectTimeSpentOn() {
 }
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
+}
+
+fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
+    collectTimeSpentOn(tag).entries.sortedBy { it.value }.forEach { 
+        println(String.format("% 8.2f %s", it.value / 60.0, it.key)) 
+    }
 }
 
 fun main() {
