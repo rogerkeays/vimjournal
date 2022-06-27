@@ -55,13 +55,15 @@ val headerRegex = Regex("^[0-9X_]{13}[.! ]... .│.*\n?$")
 fun def_parseTags() {
     parseTags("").isEmpty() returns true
     parseTags("#foo") returns listOf("#foo")
+    parseTags("nontag #foo") returns listOf("#foo")
     parseTags("#foo !bar") returns listOf("#foo", "!bar")
     parseTags(" #foo !bar") returns listOf("#foo", "!bar")
     parseTags("#foo !bar ") returns listOf("#foo", "!bar")
     parseTags("#foo   !bar ") returns listOf("#foo", "!bar")
     parseTags("#foo bar !baz") returns listOf("#foo bar", "!baz")
-    parseTags("#foo ##bar !baz") returns listOf("#foo ##bar", "!baz")
+    parseTags("#foo '#bar !baz") returns listOf("#foo '#bar", "!baz")
     parseTags("& #foo !bar") returns listOf("&", "#foo", "!bar")
+    parseTags("&  #foo !bar") returns listOf("&", "#foo", "!bar")
     parseTags("&1 #foo !bar") returns listOf("&1", "#foo", "!bar")
     parseTags("#foo & !bar") returns listOf("#foo", "&", "!bar")
     parseTags("#foo & bar") returns listOf("#foo & bar")
@@ -80,7 +82,7 @@ fun parseTags(input: String): List<String> {
     }
 }
 val tagChars = "/+#=!>@:&"
-val tagStartRegex = Regex("(^| )[$tagChars]([^ │$tagChars]|(?=\\s+[$tagChars])|\\s*$)")
+val tagStartRegex = Regex("(^| )[$tagChars](?=([^ │]| +[$tagChars]| *$))")
 
 fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "", "ABC", "", "", listOf(), "")
@@ -92,11 +94,13 @@ fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar").header returns "hello world ##tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !!bar").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag '!bar").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag !bar").header returns "hello world '#tag"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag' !bar").header returns "hello world '#tag'"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & '#tag !bar").header returns "hello world & '#tag"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello & world").header returns "hello & world"

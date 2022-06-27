@@ -49,8 +49,8 @@ autocmd BufRead *.log inoremap <C-z> ✔
 "   & skips             (entry)
 "
 
-" space then a tag character followed by either a non-tag, whitespace and then a new tag, or end of line
-autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ │/+#=!>@:&]\|\( \+[/+#=!>@:&]\)\@=\| *$\).*" contained
+" space then a tag character followed by a non-space, another tag or the end of line
+autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ │]\| \+[/+#=!>@:&]\| *$\).*" contained
 
 autocmd BufRead *.log syn keyword Bar │ contained
 autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}[!. ]... .*\ze.[│|]" contained
