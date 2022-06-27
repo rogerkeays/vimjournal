@@ -5,6 +5,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit.MINUTES
+import java.util.LinkedList
+import java.util.NoSuchElementException
   
 data class Entry(
     val seq: String,
@@ -201,81 +203,84 @@ fun Entry.getSkips(): Int {
 }
 val skipsRegex = Regex("&[0-9]*")
 
-fun def_calculateSpentTime() {
-    parse("").calculateSpentTime("") returns 0
-    parse("20000101_0000 ABC  │ =p1").calculateSpentTime("=p1") returns 0
-    parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("=p1") returns 15
-    parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("=p2") returns 0
-    parse("20000101_0000 ABC  │ =p1 +15").calculateSpentTime("") returns 0
+fun def_collectSpentTime() {
+    parse("").collectSpentTime() returns mapOf<String,Int>()
+    parse("20000101_0000 ABC  │ =p1").collectSpentTime()["=p1"] returns 0
+    parse("20000101_0000 ABC  │ =p1 +15").collectSpentTime()["=p1"] returns 15
+    parse("20000101_0000 ABC  │ =p1 +15").collectSpentTime()["=p2"] returns null
     parse("""
         20000101_0000 ABC  │ write code /code =p1
         20000101_0015 ABC  │ debug code /debug =p1
         20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
-        .calculateSpentTime("=p1") returns 30
+        .collectSpentTime()["=p1"] returns 30
 
     parse("""
         20000101_0030 ABC  │ switch projects /code +10 =p2
         20000101_0145 ABC  │ debug new project /debug =p2
         20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
-        .calculateSpentTime("=p2") returns 55
+        .collectSpentTime()["=p2"] returns 55
 
     parse("""
         20000102_1030 ABC  │ get up /wake &
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
-        .calculateSpentTime("/wake") returns 45
+        .collectSpentTime()["/wake"] returns 45
 
     parse("""
         20000102_1030 ABC  │ get up /wake +5 &
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
-        .calculateSpentTime("/wake") returns 5
+        .collectSpentTime()["/wake"] returns 5
 
     parse("""
         20000102_1030 ABC  │ get up /wake &2
         20000102_1045 ABC  │ recall my dreams /recall
         20000102_1115 ABC  │ stretch /stretch
         20000102_1145 ABC  │ make pancakes /cook""".trimIndent())
-        .calculateSpentTime("/wake") returns 75
+        .collectSpentTime()["/wake"] returns 75
 
-    { parse("""
+    parse("""
         20000102_1200 ABC  │ start coding /code =p3 &
         20000102_1230 ABC  │ research kotlin /search =p3
         20000102_1300 ABC  │ make a sandwich /cook""".trimIndent())
-        .calculateSpentTime("=p3") } throws EntrySequenceException::class
+        .collectSpentTime()["=p3"] returns 90
+
+    parse("""
+        20000102_1200 ABC  │ start coding /code =p3 &2
+        20000102_1230 ABC  │ research kotlin /search =p3
+        20000102_1300 ABC  │ make a sandwich /cook
+        20000102_1400 ABC  │ surf the internet /trawl""".trimIndent())
+        .collectSpentTime()["=p3"] returns 150
 }
-fun Sequence<Entry>.calculateSpentTime(tag: String): Int = calculateSpentTime { it.tags.contains(tag) }
-fun Sequence<Entry>.calculateSpentTime(filter: (Entry) -> Boolean): Int {
-    var total = 0
-    var pop = true
+fun Sequence<Entry>.collectSpentTime(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
+    var totals = mutableMapOf<String, Int>().toSortedMap()
     val i = iterator()
-    lateinit var current: Entry
-    while (i.hasNext()) {
-        if (pop) current = i.next(); pop = true
+    val window = LinkedList<Entry>()
+    if (i.hasNext()) window.add(i.next())
+    while (!window.isEmpty()) {
+        val current = window.remove()
         if (filter.invoke(current)) {
-            val timeSpent = current.getTimeSpent()
+            var timeSpent = current.getTimeSpent()
             if (timeSpent != null) {
-                total += timeSpent
+                totals.inc(current.tags, timeSpent)
             } else {
-                val startTime = current.getDateTime()
-                val skips = current.getSkips()
-                for (skip in 0 .. skips) { 
-                    if (i.hasNext()) {
-                        current = i.next() 
-                        if (skip < skips && filter.invoke(current))
-                            throw EntrySequenceException("Entry overlaps: " + current)
-                    } else {
-                        break
-                    }
+                try {
+                    val consume = current.getSkips() + 1
+                    while (consume > window.size) { window.add(i.next()) }
+                    timeSpent = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
+                    totals.inc(current.tags, timeSpent)
+                } catch (e: NoSuchElementException) {
+                    totals.inc(current.tags, 0)
                 }
-                total += startTime.until(current.getDateTime(), MINUTES).toInt()
-                pop = false
             }
         }
+        if (window.isEmpty() && i.hasNext()) window.add(i.next())
     }
-    return total;
+    return totals;
 }
-class EntrySequenceException(message: String): Exception(message)
+fun MutableMap<String, Int>.inc(tags: List<String>, amount: Int) {
+    for (tag in tags) put(tag, get(tag)?.plus(amount) ?: amount)
+}
 
 fun main() {
     parse(System.`in`.bufferedReader())
@@ -293,7 +298,7 @@ fun test() {
     def_getDateTime()
     def_getTimeSpent()
     def_getSkips()
-    def_calculateSpentTime()
+    def_collectSpentTime()
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
