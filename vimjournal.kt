@@ -322,7 +322,7 @@ fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -
 }
 
 fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
-    collectTimeSpentOn(tag).entries.sortedBy { it.value }.forEach { 
+    collectTimeSpentOn(tag).entries.forEach { 
         println(String.format("% 8.2f %s", it.value / 60.0, it.key)) 
     }
 }
