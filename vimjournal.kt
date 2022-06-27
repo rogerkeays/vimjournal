@@ -8,28 +8,33 @@ import java.time.temporal.ChronoUnit.MINUTES
   
 data class Entry(
     val seq: String,
-    val seqtype: String,
     val zone: String,
-    val rating: String,
     val header: String,
-    val tags: List<String>,
-    val body: String
+    val tags: List<String> = listOf(),
+    val body: String = "",
+    val rating: String = "",
+    val seqtype: String = "",
 )
 
-fun Entry.print() {
-    print(seq)
-    print(if (seqtype.isBlank()) " " else seqtype)
-    print(zone)
-    print(" ")
-    print(if (rating.isBlank()) " " else rating)
-    print("│ ")
-    print(header)
-    println(tags.joinToString(" ", prefix=if (header.isEmpty()) "" else " "))
-    if (! body.isBlank()) {
-        println()
-        println(body)
-        println()
-    }
+fun def_format() {
+    Entry("XXXXXXXX_XXXX", "ABC", "").format() returns "XXXXXXXX_XXXX ABC  │"
+    Entry("XXXXXXXX_XXXX", "ABC", "hello world").format() returns "XXXXXXXX_XXXX ABC  │ hello world"
+    Entry("XXXXXXXX_XXXX", "ABC", "hello world", rating="+").format() returns "XXXXXXXX_XXXX ABC +│ hello world"
+    Entry("XXXXXXXX_XXXX", "ABC", "hello world", seqtype=".").format() returns "XXXXXXXX_XXXX.ABC  │ hello world"
+    Entry("XXXXXXXX_XXXX", "ABC", "hello world", listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX ABC  │ hello world #foo !bar"
+    Entry("XXXXXXXX_XXXX", "ABC", "hello world", body="body").format() returns "XXXXXXXX_XXXX ABC  │ hello world\n\nbody\n"
+    Entry("XXXXXXXX_XXXX", "ABC", "", listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX ABC  │ #foo !bar"
+}
+fun Entry.format() = buildString {
+    append(seq)
+    append(seqtype.ifBlank{' '})
+    append(zone)
+    append(' ')
+    append(rating.ifBlank{' '})
+    append('│')
+    if (!header.isBlank()) append(' ').append(header)
+    if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
+    if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
 
 fun def_isJournalHeader() {
@@ -86,12 +91,11 @@ val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ │]| +[$tagChars]| *$))")
 
 fun def_parseEntry() {
-    parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "", "ABC", "", "", listOf(), "")
-    parseEntry("XXXXXXXX_XXXX.ABC  │").seqtype returns "."
-    parseEntry("XXXXXXXX_XXXX.ABC +│").rating returns "+"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ").tags returns listOf<String>()
+    parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", "")
+    parseEntry("XXXXXXXX_XXXX ABC +│") returns Entry("XXXXXXXX_XXXX", "ABC", "", rating="+")
+    parseEntry("XXXXXXXX_XXXX.ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", "", seqtype=".")
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
@@ -277,10 +281,11 @@ fun main() {
     parse(System.`in`.bufferedReader())
       .filter { it.seq > "20220625" }
       .sortedBy { it.seq }
-      .forEach { it.print() }
+      .forEach { println(it.format()) }
 }
 
 fun test() {
+    def_format()
     def_isJournalHeader()
     def_parseTags()
     def_parseEntry()
