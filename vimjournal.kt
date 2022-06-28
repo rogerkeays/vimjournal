@@ -284,6 +284,12 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
             var timeSpent = current.getTimeClaimed()
             if (timeSpent != null) {
                 totals.inc(current, timeSpent)
+                if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
+                   val next = i.next()
+                   window.add(next)
+                   if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(timeSpent.toLong()))
+                       System.err.println("WARNING: time claim overlaps next entry: ${current.format()}")
+                }
             } else {
                 try {
                     val consume = current.getSkips() + 1
