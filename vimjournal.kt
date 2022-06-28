@@ -47,6 +47,7 @@ fun def_isJournalHeader() {
     "20210120_2210 ABC  │ ".isJournalHeader() returns true
     "20210120_2210 ABC  │ hello world".isJournalHeader() returns true
     "20210120_2210.ABC  │ hello world".isJournalHeader() returns true
+    "20210120_2210'ABC  │ hello world".isJournalHeader() returns true
     "20210120_2210 ABC *│ hello world".isJournalHeader() returns true
     "20210120_2210 ABC  │ hello world\n".isJournalHeader() returns true
     "20210120_2210 ABC  │ hello world #truth".isJournalHeader() returns true
@@ -58,7 +59,7 @@ fun def_isJournalHeader() {
     "".isJournalHeader() returns false
 }
 fun String.isJournalHeader(): Boolean = matches(headerRegex);
-val headerRegex = Regex("^[0-9X_]{13}[.! ]... .│.*\n?$")
+val headerRegex = Regex("^[0-9X_]{13}[\\p{Punct} ]... .│.*\n?$")
 
 fun def_parseTags() {
     parseTags("").isEmpty() returns true
