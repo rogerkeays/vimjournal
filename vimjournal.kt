@@ -11,8 +11,8 @@ import java.util.NoSuchElementException
   
 data class Entry(
     val seq: String,
-    val zone: String,
-    val header: String,
+    val zone: String = "XXX",
+    val header: String = "",
     val tags: List<String> = listOf(),
     val body: String = "",
     val rating: String = "",
@@ -95,9 +95,9 @@ val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ │]| +[$tagChars]| *$))")
 
 fun def_parseEntry() {
-    parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", "")
-    parseEntry("XXXXXXXX_XXXX ABC +│") returns Entry("XXXXXXXX_XXXX", "ABC", "", rating="+")
-    parseEntry("XXXXXXXX_XXXX.ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", "", seqtype=".")
+    parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC")
+    parseEntry("XXXXXXXX_XXXX ABC +│") returns Entry("XXXXXXXX_XXXX", "ABC", rating="+")
+    parseEntry("XXXXXXXX_XXXX.ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", seqtype=".")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world ") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world!") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world!")
@@ -162,31 +162,31 @@ fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
 val linefeed = System.getProperty("line.separator")
 
 fun def_getDateTime() {
-    parseEntry("20000101_0000 ABC  │ ").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
-    { parseEntry("20000101_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
-    { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
+    Entry("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
+    { Entry("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
+    { Entry("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
 }
 fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
 fun def_isExactSeq() {
-    parseEntry("20000101_0000 ABC  │ ").isExactSeq() returns true
-    parseEntry("20000101_0000.ABC  │ ").isExactSeq() returns false
-    parseEntry("20000101_XXXX ABC  │ ").isExactSeq() returns false
-    parseEntry("XXXXXXXX_XXXX ABC  │ ").isExactSeq() returns false
+    Entry("20000101_0000").isExactSeq() returns true
+    Entry("20000101_XXXX").isExactSeq() returns false
+    Entry("XXXXXXXX_XXXX").isExactSeq() returns false
+    Entry("20000101_0000", seqtype=".").isExactSeq() returns false
 }
 fun Entry.isExactSeq() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
 fun def_getTimeSpent() {
-    parseEntry("XXXXXXXX_XXXX ABC  │ ").getTimeSpent() returns null
-    parseEntry("XXXXXXXX_XXXX ABC  │ +0").getTimeSpent() returns 0
-    parseEntry("XXXXXXXX_XXXX ABC  │ +word").getTimeSpent() returns null
-    parseEntry("XXXXXXXX_XXXX ABC  │ /code +15").getTimeSpent() returns 15
-    parseEntry("XXXXXXXX_XXXX ABC  │ /code +15 +30").getTimeSpent() returns 30
-    parseEntry("XXXXXXXX_XXXX ABC  │ /code!").getTimeSpent() returns 0
-    parseEntry("XXXXXXXX_XXXX ABC  │ +15 /code!").getTimeSpent() returns 0
-    parseEntry("XXXXXXXX_XXXX ABC  │ /code! +15").getTimeSpent() returns 15
+    Entry("XXXXXXXX_XXXX").getTimeSpent() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTimeSpent() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTimeSpent() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTimeSpent() returns 15
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTimeSpent() returns 30
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!")).getTimeSpent() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTimeSpent() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTimeSpent() returns 15
 }
 fun Entry.getTimeSpent(): Int? {
     val timeSpentTag = tags.filter { it.matches(timeSpentRegex) }.lastOrNull()
@@ -197,17 +197,14 @@ fun Entry.getTimeSpent(): Int? {
 val timeSpentRegex = Regex("(\\+[0-9]+|/.*!)")
 
 fun def_getSkips() {
-    parseEntry("XXXXXXXX_XXXX ABC  │ ").getSkips() returns 0
-    parseEntry("XXXXXXXX_XXXX ABC  │ &").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ & ").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world").getSkips() returns 0
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #foo").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #foo").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &").getSkips() returns 1
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #foo &2").getSkips() returns 2
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo").getSkips() returns 2
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &2 #foo &3").getSkips() returns 3
+    Entry("XXXXXXXX_XXXX").getSkips() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("&")).getSkips() returns 1
+    Entry("XXXXXXXX_XXXX", tags=listOf("&", "#foo")).getSkips() returns 1
+    Entry("XXXXXXXX_XXXX", tags=listOf("&1", "#foo")).getSkips() returns 1
+    Entry("XXXXXXXX_XXXX", tags=listOf("#foo", "&")).getSkips() returns 1
+    Entry("XXXXXXXX_XXXX", tags=listOf("#foo", "&2")).getSkips() returns 2
+    Entry("XXXXXXXX_XXXX", tags=listOf("&2", "#foo")).getSkips() returns 2
+    Entry("XXXXXXXX_XXXX", tags=listOf("&2", "#foo", "&3")).getSkips() returns 3
 }
 fun Entry.getSkips(): Int {
     val skipsTag = tags.filter { it.matches(skipsRegex) }.lastOrNull()
@@ -218,57 +215,51 @@ fun Entry.getSkips(): Int {
 val skipsRegex = Regex("&[0-9]*")
 
 fun def_collectTimeSpent() {
-    parse("").collectTimeSpent() returns mapOf("" to 0)
-    parse("20000101_0000 ABC  │ =p1").collectTimeSpent()[""] returns 0
-    parse("20000101_0000 ABC  │ =p1").collectTimeSpent()["=p1"] returns 0
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p1"] returns 15
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()[""] returns 15
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent()["=p2"] returns null
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpent().containsKey("+15") returns false
-    parse("""
-        20000101_0000 ABC  │ write code /code =p1
-        20000101_0015 ABC  │ debug code /debug =p1
-        20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
+    listOf<Entry>().collectTimeSpent() returns mapOf("" to 0)
+    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpent()[""] returns 0
+    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpent()["=p1"] returns 0
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()["=p1"] returns 15
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()[""] returns 15
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()["=p2"] returns null
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent().containsKey("+15") returns false
+    listOf(Entry("20000101_0000", tags=listOf("/code", "=p1")),
+           Entry("20000101_0015", tags=listOf("/debug", "=p1")),
+           Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
         .collectTimeSpent()["=p1"] returns 30
 
-    parse("""
-        20000101_0030 ABC  │ switch projects /code +10 =p2
-        20000101_0145 ABC  │ debug new project /debug =p2
-        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+           Entry("20000101_0145", tags=listOf("/debug", "=p2")),
+           Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpent()["=p2"] returns 55
 
-    parse("""
-        20000102_1030 ABC  │ get up /wake &
-        20000102_1045 ABC  │ recall my dreams /recall
-        20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
+    listOf(Entry("20000102_1030", tags=listOf("/wake", "&")),
+           Entry("20000102_1045", tags=listOf("/recall")),
+           Entry("20000102_1115", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 45
 
-    parse("""
-        20000102_1030 ABC  │ get up /wake +5 &
-        20000102_1045 ABC  │ recall my dreams /recall
-        20000102_1115 ABC  │ make pancakes /cook""".trimIndent())
+    listOf(Entry("20000102_1030", tags=listOf("/wake", "+5", "&")),
+           Entry("20000102_1045", tags=listOf("/recall")),
+           Entry("20000102_1115", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 5
 
-    parse("""
-        20000102_1030 ABC  │ get up /wake &2
-        20000102_1045 ABC  │ recall my dreams /recall
-        20000102_1115 ABC  │ stretch /stretch
-        20000102_1145 ABC  │ make pancakes /cook""".trimIndent())
+    listOf(Entry("20000102_1030", tags=listOf("/wake", "&2")),
+           Entry("20000102_1045", tags=listOf("/recall")),
+           Entry("20000102_1115", tags=listOf("/stretch")),
+           Entry("20000102_1145", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 75
 
-    parse("""
-        20000102_1200 ABC  │ start coding /code =p3 &
-        20000102_1230 ABC  │ research kotlin /search =p3
-        20000102_1300 ABC  │ make a sandwich /cook""".trimIndent())
+    listOf(Entry("20000102_1200", tags=listOf("/code", "=p3", "&")),
+           Entry("20000102_1230", tags=listOf("/search", "=p3")),
+           Entry("20000102_1300", tags=listOf("/cook")))
         .collectTimeSpent()["=p3"] returns 90
 
-    parse("""
-        20000102_1200 ABC  │ start coding /code =p3 &2
-        20000102_1230 ABC  │ research kotlin /search =p3
-        20000102_1300 ABC  │ make a sandwich /cook
-        20000102_1400 ABC  │ surf the internet /trawl""".trimIndent())
+    listOf(Entry("20000102_1200", tags=listOf("/code", "=p3", "&2")),
+           Entry("20000102_1230", tags=listOf("/search", "=p3")),
+           Entry("20000102_1300", tags=listOf("/cook")),
+           Entry("20000102_1400", tags=listOf("/trawl")))
         .collectTimeSpent()["=p3"] returns 150
 }
+fun List<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }) = asSequence().collectTimeSpent(filter)
 fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf("" to 0).toSortedMap()
     val i = iterator()
@@ -307,28 +298,26 @@ fun MutableMap<String, Int>.inc(entry: Entry, amount: Int) {
 val dontIncRegex = Regex("^\\+[0-9]+")
 
 fun def_collectTimeSpentOn() {
-    parse("20000101_0000 ABC  │ =p1").collectTimeSpentOn("=p1")["=p1"] returns 0
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p1")["=p1"] returns 15
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p2")["=p1"] returns null
-    parse("20000101_0000 ABC  │ =p1 +15").collectTimeSpentOn("=p1")["=p2"] returns null
-    parse("""
-        20000101_0000 ABC  │ write code /code =p1
-        20000101_0015 ABC  │ debug code /debug =p1
-        20000101_0030 ABC  │ switch projects /code +10 =p2""".trimIndent())
+    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpentOn("=p1")["=p1"] returns 0
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p1")["=p1"] returns 15
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p2")["=p1"] returns null
+    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p1")["=p2"] returns null
+    listOf(Entry("20000101_0000", tags=listOf("/code", "=p1")),
+           Entry("20000101_0015", tags=listOf("/debug", "=p1")),
+           Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
         .collectTimeSpentOn("=p1")["/code"] returns 15
 
-    parse("""
-        20000101_0030 ABC  │ switch projects /code +10 =p2
-        20000101_0145 ABC  │ debug new project /debug =p2.x
-        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+           Entry("20000101_0145", tags=listOf("/debug", "=p2.x")),
+           Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2.x"] returns 45
 
-    parse("""
-        20000101_0030 ABC  │ switch projects /code +10 =p2
-        20000101_0145 ABC  │ debug new project /debug =p2x
-        20000101_0230 ABC  │ make a mango shake /cook""".trimIndent())
+    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+           Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
+           Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2x"] returns null
 }
+fun List<Entry>.collectTimeSpentOn(tag: String) = asSequence().collectTimeSpentOn(tag)
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
