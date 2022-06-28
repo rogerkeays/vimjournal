@@ -321,25 +321,18 @@ fun List<Entry>.collectTimeSpentOn(tag: String) = asSequence().collectTimeSpentO
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
-
 fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
     collectTimeSpentOn(tag).entries.forEach { 
         println(String.format("% 8.2f %s", it.value / 60.0, it.key)) 
     }
 }
 
-
-fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
-    val timeSpent = first.getTimeSpent() ?: 0
-    if (timeSpent > 0
-            && second != null
-            && first.isExactSeq() && second.isExactSeq()
-            && first.tags.find { it.startsWith("&") } == null
-            && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
-        first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
-    } else {
-        first
-    }
+fun def_pairs() {
+    sequenceOf<Int>().pairs().toList() returns listOf<Int>()
+    sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
+    sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
+    sequenceOf(1, 2, 3).pairs().toList() returns listOf(Pair(1, 2), Pair(2, 3), Pair(3, null))
+    sequenceOf("a", "b", "c", "d").pairs().toList() returns listOf(Pair("a", "b"), Pair("b", "c"), Pair("c", "d"), Pair("d", null))
 }
 fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     val i = iterator()
@@ -355,6 +348,41 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     }
 }
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
+
+fun def_scrubTimeSpentTags() {
+    listOf(Entry("20000101_0030", tags=listOf("+10")),
+           Entry("20000101_0040"))
+        .scrubTimeSpentTags()[0].tags.contains("+10") returns false
+
+    listOf(Entry("20000101_0030", tags=listOf("+10", "&")),
+           Entry("20000101_0040"))
+        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
+
+    listOf(Entry("20000101_0030", tags=listOf("+10")),
+           Entry("20000101_0045"))
+        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
+
+    listOf(Entry("XXXXXXXX_XXXX", tags=listOf("+10")),
+           Entry("20000101_0010"))
+        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
+
+    listOf(Entry("20000101_0030", tags=listOf("+10")),
+           Entry("XXXXXXXX_XXXX"))
+        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
+}
+fun List<Entry>.scrubTimeSpentTags(): List<Entry> = asSequence().scrubTimeSpentTags().toList()
+fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
+    val timeSpent = first.getTimeSpent() ?: 0
+    if (timeSpent > 0
+            && second != null
+            && first.isExactSeq() && second.isExactSeq()
+            && first.tags.find { it.startsWith("&") } == null
+            && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
+        first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
+    } else {
+        first
+    }
+}
 
 fun main() {
     parse(System.`in`.bufferedReader()).scrubTimeSpentTags().forEach { println(it.format()) }
@@ -372,6 +400,8 @@ fun test() {
     def_getSkips()
     def_collectTimeSpent()
     def_collectTimeSpentOn()
+    def_pairs()
+    def_scrubTimeSpentTags()
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
