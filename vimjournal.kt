@@ -40,25 +40,25 @@ fun Entry.format() = buildString {
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
 
-fun def_isJournalHeader() {
-    "00000000_0000 ABC  │".isJournalHeader() returns true
-    "0000XXXX_XXXX ABC  │".isJournalHeader() returns true
-    "20210120_2210 ABC  │".isJournalHeader() returns true
-    "20210120_2210 ABC  │ ".isJournalHeader() returns true
-    "20210120_2210 ABC  │ hello world".isJournalHeader() returns true
-    "20210120_2210.ABC  │ hello world".isJournalHeader() returns true
-    "20210120_2210'ABC  │ hello world".isJournalHeader() returns true
-    "20210120_2210 ABC *│ hello world".isJournalHeader() returns true
-    "20210120_2210 ABC  │ hello world\n".isJournalHeader() returns true
-    "20210120_2210 ABC  │ hello world #truth".isJournalHeader() returns true
-    "0000XXXX_YYYY ABC  │".isJournalHeader() returns false
-    "20210120_2210 ABC │ hello world".isJournalHeader() returns false
-    "20210120_2210 ABC   hello world".isJournalHeader() returns false
-    "202101202210 ABC  │ hello world".isJournalHeader() returns false
-    "foo".isJournalHeader() returns false
-    "".isJournalHeader() returns false
+fun def_isHeader() {
+    "00000000_0000 ABC  │".isHeader() returns true
+    "0000XXXX_XXXX ABC  │".isHeader() returns true
+    "20210120_2210 ABC  │".isHeader() returns true
+    "20210120_2210 ABC  │ ".isHeader() returns true
+    "20210120_2210 ABC  │ hello world".isHeader() returns true
+    "20210120_2210.ABC  │ hello world".isHeader() returns true
+    "20210120_2210'ABC  │ hello world".isHeader() returns true
+    "20210120_2210 ABC *│ hello world".isHeader() returns true
+    "20210120_2210 ABC  │ hello world\n".isHeader() returns true
+    "20210120_2210 ABC  │ hello world #truth".isHeader() returns true
+    "0000XXXX_YYYY ABC  │".isHeader() returns false
+    "20210120_2210 ABC │ hello world".isHeader() returns false
+    "20210120_2210 ABC   hello world".isHeader() returns false
+    "202101202210 ABC  │ hello world".isHeader() returns false
+    "foo".isHeader() returns false
+    "".isHeader() returns false
 }
-fun String.isJournalHeader(): Boolean = matches(headerRegex);
+fun String.isHeader(): Boolean = matches(headerRegex);
 val headerRegex = Regex("^[0-9X_]{13}[\\p{Punct} ]... .│.*\n?$")
 
 fun def_parseTags() {
@@ -145,7 +145,7 @@ fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
 fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
     var header = input.readLine()
-    while (header != null && !header.isJournalHeader()) {
+    while (header != null && !header.isHeader()) {
         header = input.readLine()
     }
     var body = ""
@@ -153,7 +153,7 @@ fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
     while (true) {
         input.mark(8192)
         line = input.readLine()
-        if (line == null || line.isJournalHeader()) break
+        if (line == null || line.isHeader()) break
         body += linefeed + line
     }
     input.reset()
@@ -410,7 +410,7 @@ fun main() {
 
 fun test() {
     def_format()
-    def_isJournalHeader()
+    def_isHeader()
     def_parseTags()
     def_parseEntry()
     def_parse()
