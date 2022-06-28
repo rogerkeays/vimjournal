@@ -178,17 +178,17 @@ fun def_isExact() {
 fun Entry.isExact() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
-fun def_getTimeSpent() {
-    Entry("XXXXXXXX_XXXX").getTimeSpent() returns null
-    Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTimeSpent() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTimeSpent() returns null
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTimeSpent() returns 15
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTimeSpent() returns 30
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code!")).getTimeSpent() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTimeSpent() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTimeSpent() returns 15
+fun def_getTimeClaimed() {
+    Entry("XXXXXXXX_XXXX").getTimeClaimed() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTimeClaimed() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTimeClaimed() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTimeClaimed() returns 15
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTimeClaimed() returns 30
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!")).getTimeClaimed() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTimeClaimed() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTimeClaimed() returns 15
 }
-fun Entry.getTimeSpent(): Int? {
+fun Entry.getTimeClaimed(): Int? {
     val timeSpentTag = tags.filter { it.matches(timeSpentRegex) }.lastOrNull()
     if (timeSpentTag == null) return null
     if (timeSpentTag.endsWith("!")) return 0
@@ -281,7 +281,7 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
     while (!window.isEmpty()) {
         val current = window.remove()
         if (filter.invoke(current)) {
-            var timeSpent = current.getTimeSpent()
+            var timeSpent = current.getTimeClaimed()
             if (timeSpent != null) {
                 totals.inc(current, timeSpent)
             } else {
@@ -392,7 +392,7 @@ fun def_scrubTimeSpentTags() {
         .scrubTimeSpentTags().first().tags.contains("+10") returns true
 }
 fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
-    val timeSpent = first.getTimeSpent() ?: 0
+    val timeSpent = first.getTimeClaimed() ?: 0
     if (timeSpent > 0
             && second != null
             && first.isExact() && second.isExact()
@@ -416,7 +416,7 @@ fun test() {
     def_parse()
     def_getDateTime()
     def_isExact()
-    def_getTimeSpent()
+    def_getTimeClaimed()
     def_getSkips()
     def_collectTimeSpent()
     def_collectTimeSpentOn()
