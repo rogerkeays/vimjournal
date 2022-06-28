@@ -329,16 +329,16 @@ fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
 }
 
 
-fun Sequence<Entry>.stripTimeSpentTags() = pairs().forEach { (first, second) ->
+fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
     val timeSpent = first.getTimeSpent() ?: 0
     if (timeSpent > 0
             && second != null
             && first.isExactSeq() && second.isExactSeq()
             && first.tags.find { it.startsWith("&") } == null
             && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
-        println(first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) }).format())
+        first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
     } else {
-        println(first.format())
+        first
     }
 }
 fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
@@ -357,7 +357,7 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
 fun main() {
-    parse(System.`in`.bufferedReader()).stripTimeSpentTags()
+    parse(System.`in`.bufferedReader()).scrubTimeSpentTags().forEach { println(it.format()) }
 }
 
 fun test() {
