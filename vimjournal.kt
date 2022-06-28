@@ -163,15 +163,25 @@ val linefeed = System.getProperty("line.separator")
 
 fun def_getDateTime() {
     parseEntry("20000101_0000 ABC  │ ").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
-    { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
     { parseEntry("20000101_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
+    { parseEntry("XXXXXXXX_XXXX ABC  │ ").getDateTime() } throws DateTimeParseException::class;
 }
 fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
+fun def_isExactSeq() {
+    parseEntry("20000101_0000 ABC  │ ").isExactSeq() returns true
+    parseEntry("20000101_0000.ABC  │ ").isExactSeq() returns false
+    parseEntry("20000101_XXXX ABC  │ ").isExactSeq() returns false
+    parseEntry("XXXXXXXX_XXXX ABC  │ ").isExactSeq() returns false
+}
+fun Entry.isExactSeq() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
+val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
+
 fun def_getTimeSpent() {
     parseEntry("XXXXXXXX_XXXX ABC  │ ").getTimeSpent() returns null
     parseEntry("XXXXXXXX_XXXX ABC  │ +0").getTimeSpent() returns 0
+    parseEntry("XXXXXXXX_XXXX ABC  │ +word").getTimeSpent() returns null
     parseEntry("XXXXXXXX_XXXX ABC  │ /code +15").getTimeSpent() returns 15
     parseEntry("XXXXXXXX_XXXX ABC  │ /code +15 +30").getTimeSpent() returns 30
     parseEntry("XXXXXXXX_XXXX ABC  │ /code!").getTimeSpent() returns 0
@@ -329,9 +339,35 @@ fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
     }
 }
 
+fun Sequence<Entry>.forEachPair(task: (Entry, Entry?) -> Unit) {
+    val i = iterator()
+    var first = i.nextOrNull()
+    var second = i.nextOrNull()
+    while (first != null) {
+        task(first, second)
+        first = second
+        second = i.nextOrNull()
+    }
+}
+fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
+
+fun Sequence<Entry>.stripTimeSpentTags() {
+    forEachPair { first, second ->
+        val timeSpent = first.getTimeSpent() ?: 0
+        if (timeSpent > 0
+                && second != null
+                && first.isExactSeq() && second.isExactSeq()
+                && first.tags.find { it.startsWith("&") } == null
+                && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
+            println(first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) }).format())
+        } else {
+            println(first.format())
+        }
+    }
+}
+
 fun main() {
-    parse(System.`in`.bufferedReader())
-      .forEach { println(it.format()) }
+    parse(System.`in`.bufferedReader()).stripTimeSpentTags()
 }
 
 fun test() {
@@ -341,6 +377,7 @@ fun test() {
     def_parseEntry()
     def_parse()
     def_getDateTime()
+    def_isExactSeq()
     def_getTimeSpent()
     def_getSkips()
     def_collectTimeSpent()
