@@ -99,6 +99,7 @@ fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX.ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", "", seqtype=".")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world ") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world!") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world!")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").header returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
@@ -124,7 +125,7 @@ fun parseEntry(header: String, body: String): Entry {
         zone = header.slice(14..16),
         rating = header.slice(18..18).trim(),
         header = header.slice(20..tagIndex).trim(),
-        tags = parseTags(header.drop(tagIndex)),
+        tags = parseTags(header.drop(tagIndex + 1)),
         body = body.trim())
 }
 
@@ -329,8 +330,6 @@ fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
 
 fun main() {
     parse(System.`in`.bufferedReader())
-      .filter { it.seq > "20220625" }
-      .sortedBy { it.seq }
       .forEach { println(it.format()) }
 }
 
