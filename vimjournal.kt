@@ -215,51 +215,64 @@ fun Entry.getSkips(): Int {
 val skipsRegex = Regex("&[0-9]*")
 
 fun def_collectTimeSpent() {
-    listOf<Entry>().collectTimeSpent() returns mapOf("" to 0)
-    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpent()[""] returns 0
-    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpent()["=p1"] returns 0
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()["=p1"] returns 15
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()[""] returns 15
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent()["=p2"] returns null
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpent().containsKey("+15") returns false
-    listOf(Entry("20000101_0000", tags=listOf("/code", "=p1")),
-           Entry("20000101_0015", tags=listOf("/debug", "=p1")),
-           Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
+    sequenceOf<Entry>()
+        .collectTimeSpent()[""] returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1")))
+        .collectTimeSpent()[""] returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1")))
+        .collectTimeSpent()["=p1"] returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpent()["=p1"] returns 15
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpent()[""] returns 15
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpent()["=p2"] returns null
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpent().containsKey("+15") returns false
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("/code", "=p1")),
+         Entry("20000101_0015", tags=listOf("/debug", "=p1")),
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
         .collectTimeSpent()["=p1"] returns 30
-
-    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
-           Entry("20000101_0145", tags=listOf("/debug", "=p2")),
-           Entry("20000101_0230", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Entry("20000101_0145", tags=listOf("/debug", "=p2")),
+         Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpent()["=p2"] returns 55
-
-    listOf(Entry("20000102_1030", tags=listOf("/wake", "&")),
-           Entry("20000102_1045", tags=listOf("/recall")),
-           Entry("20000102_1115", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("/wake", "&")),
+         Entry("20000102_1045", tags=listOf("/recall")),
+         Entry("20000102_1115", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 45
-
-    listOf(Entry("20000102_1030", tags=listOf("/wake", "+5", "&")),
-           Entry("20000102_1045", tags=listOf("/recall")),
-           Entry("20000102_1115", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("/wake", "+5", "&")),
+         Entry("20000102_1045", tags=listOf("/recall")),
+         Entry("20000102_1115", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 5
-
-    listOf(Entry("20000102_1030", tags=listOf("/wake", "&2")),
-           Entry("20000102_1045", tags=listOf("/recall")),
-           Entry("20000102_1115", tags=listOf("/stretch")),
-           Entry("20000102_1145", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("/wake", "&2")),
+         Entry("20000102_1045", tags=listOf("/recall")),
+         Entry("20000102_1115", tags=listOf("/stretch")),
+         Entry("20000102_1145", tags=listOf("/cook")))
         .collectTimeSpent()["/wake"] returns 75
-
-    listOf(Entry("20000102_1200", tags=listOf("/code", "=p3", "&")),
-           Entry("20000102_1230", tags=listOf("/search", "=p3")),
-           Entry("20000102_1300", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000102_1200", tags=listOf("/code", "=p3", "&")),
+         Entry("20000102_1230", tags=listOf("/search", "=p3")),
+         Entry("20000102_1300", tags=listOf("/cook")))
         .collectTimeSpent()["=p3"] returns 90
-
-    listOf(Entry("20000102_1200", tags=listOf("/code", "=p3", "&2")),
-           Entry("20000102_1230", tags=listOf("/search", "=p3")),
-           Entry("20000102_1300", tags=listOf("/cook")),
-           Entry("20000102_1400", tags=listOf("/trawl")))
+    sequenceOf(
+         Entry("20000102_1200", tags=listOf("/code", "=p3", "&2")),
+         Entry("20000102_1230", tags=listOf("/search", "=p3")),
+         Entry("20000102_1300", tags=listOf("/cook")),
+         Entry("20000102_1400", tags=listOf("/trawl")))
         .collectTimeSpent()["=p3"] returns 150
 }
-fun List<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }) = asSequence().collectTimeSpent(filter)
 fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf("" to 0).toSortedMap()
     val i = iterator()
@@ -298,26 +311,34 @@ fun MutableMap<String, Int>.inc(entry: Entry, amount: Int) {
 val dontIncRegex = Regex("^\\+[0-9]+")
 
 fun def_collectTimeSpentOn() {
-    listOf(Entry("20000101_0000", tags=listOf("=p1"))).collectTimeSpentOn("=p1")["=p1"] returns 0
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p1")["=p1"] returns 15
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p2")["=p1"] returns null
-    listOf(Entry("20000101_0000", tags=listOf("=p1", "+15"))).collectTimeSpentOn("=p1")["=p2"] returns null
-    listOf(Entry("20000101_0000", tags=listOf("/code", "=p1")),
-           Entry("20000101_0015", tags=listOf("/debug", "=p1")),
-           Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1")))
+        .collectTimeSpentOn("=p1")["=p1"] returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpentOn("=p1")["=p1"] returns 15
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpentOn("=p2")["=p1"] returns null
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("=p1", "+15")))
+        .collectTimeSpentOn("=p1")["=p2"] returns null
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("/code", "=p1")),
+         Entry("20000101_0015", tags=listOf("/debug", "=p1")),
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
         .collectTimeSpentOn("=p1")["/code"] returns 15
-
-    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
-           Entry("20000101_0145", tags=listOf("/debug", "=p2.x")),
-           Entry("20000101_0230", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Entry("20000101_0145", tags=listOf("/debug", "=p2.x")),
+         Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2.x"] returns 45
-
-    listOf(Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
-           Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
-           Entry("20000101_0230", tags=listOf("/cook")))
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
+         Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2x"] returns null
 }
-fun List<Entry>.collectTimeSpentOn(tag: String) = asSequence().collectTimeSpentOn(tag)
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
@@ -332,7 +353,6 @@ fun def_pairs() {
     sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
     sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
     sequenceOf(1, 2, 3).pairs().toList() returns listOf(Pair(1, 2), Pair(2, 3), Pair(3, null))
-    sequenceOf("a", "b", "c", "d").pairs().toList() returns listOf(Pair("a", "b"), Pair("b", "c"), Pair("c", "d"), Pair("d", null))
 }
 fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     val i = iterator()
@@ -350,27 +370,27 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
 fun def_scrubTimeSpentTags() {
-    listOf(Entry("20000101_0030", tags=listOf("+10")),
-           Entry("20000101_0040"))
-        .scrubTimeSpentTags()[0].tags.contains("+10") returns false
-
-    listOf(Entry("20000101_0030", tags=listOf("+10", "&")),
-           Entry("20000101_0040"))
-        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
-
-    listOf(Entry("20000101_0030", tags=listOf("+10")),
-           Entry("20000101_0045"))
-        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
-
-    listOf(Entry("XXXXXXXX_XXXX", tags=listOf("+10")),
-           Entry("20000101_0010"))
-        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
-
-    listOf(Entry("20000101_0030", tags=listOf("+10")),
-           Entry("XXXXXXXX_XXXX"))
-        .scrubTimeSpentTags()[0].tags.contains("+10") returns true
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("+10")),
+         Entry("20000101_0040"))
+        .scrubTimeSpentTags().first().tags.contains("+10") returns false
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("+10", "&")),
+         Entry("20000101_0040"))
+        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("+10")),
+         Entry("20000101_0045"))
+        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+    sequenceOf(
+         Entry("XXXXXXXX_XXXX", tags=listOf("+10")),
+         Entry("20000101_0010"))
+        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("+10")),
+         Entry("XXXXXXXX_XXXX"))
+        .scrubTimeSpentTags().first().tags.contains("+10") returns true
 }
-fun List<Entry>.scrubTimeSpentTags(): List<Entry> = asSequence().scrubTimeSpentTags().toList()
 fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
     val timeSpent = first.getTimeSpent() ?: 0
     if (timeSpent > 0
