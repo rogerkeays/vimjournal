@@ -12,7 +12,7 @@ import java.util.NoSuchElementException
 data class Entry(
     val seq: String,
     val zone: String = "XXX",
-    val header: String = "",
+    val summary: String = "",
     val tags: List<String> = listOf(),
     val body: String = "",
     val rating: String = "",
@@ -35,7 +35,7 @@ fun Entry.format() = buildString {
     append(' ')
     append(rating.ifBlank{' '})
     append('│')
-    if (!header.isBlank()) append(' ').append(header)
+    if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
@@ -101,21 +101,21 @@ fun def_parseEntry() {
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world ") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world!") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world!")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").header returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").summary returns "hello world"
     parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag '!bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag !bar").header returns "hello world '#tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag' !bar").header returns "hello world '#tag'"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & '#tag !bar").header returns "hello world & '#tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").header returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world").header returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").header returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").header returns "🩢🩣🩤"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag '!bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag !bar").summary returns "hello world '#tag"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag' !bar").summary returns "hello world '#tag'"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & '#tag !bar").summary returns "hello world & '#tag"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world").summary returns "hello & world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").summary returns "hello & world"
+    parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").summary returns "🩢🩣🩤"
 }
 fun parseEntry(header: String) = parseEntry(header, "")
 fun parseEntry(header: String, body: String): Entry {
@@ -125,13 +125,13 @@ fun parseEntry(header: String, body: String): Entry {
         seqtype = header.slice(13..13).trim(),
         zone = header.slice(14..16),
         rating = header.slice(18..18).trim(),
-        header = header.slice(20..tagIndex).trim(),
+        summary = header.slice(20..tagIndex).trim(),
         tags = parseTags(header.drop(tagIndex + 1)),
         body = body.trim())
 }
 
 fun def_parse() {
-    parse("XXXXXXXX_XXXX ABC  │ hello world").first().header returns "hello world"
+    parse("XXXXXXXX_XXXX ABC  │ hello world").first().summary returns "hello world"
     parse("XXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().body returns "body"
     parse("XXXXXXXX_XXXX ABC  │ hello world\nXXXXXXXX_XXXX ABC  │ hello world2").count() returns 2
     parse("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar\n\nbody goes here\n\n").first().body returns "body goes here"
@@ -139,7 +139,7 @@ fun def_parse() {
     parse("XXXXXXXX_XXXX ABC  │ hello world #tag !bar\n\nbody goes here\n").first().tags returns listOf("#tag", "!bar")
     parse("XXXXXXXX_XXXX ABC  │ hello world #tag !bar\n\nbody #notag goes here\n").first().tags returns listOf("#tag", "!bar")
     parse("XXXXXXXX_XXXX ABC  │ hello world\n\nbody #notag goes here\n").first().tags.isEmpty() returns true
-    parse("// vim: modeline\nXXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().header returns "hello world"
+    parse("// vim: modeline\nXXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().summary returns "hello world"
 }
 fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
