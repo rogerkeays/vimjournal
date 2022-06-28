@@ -328,32 +328,33 @@ fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
     }
 }
 
-fun Sequence<Entry>.forEachPair(task: (Entry, Entry?) -> Unit) {
+
+fun Sequence<Entry>.stripTimeSpentTags() = pairs().forEach { (first, second) ->
+    val timeSpent = first.getTimeSpent() ?: 0
+    if (timeSpent > 0
+            && second != null
+            && first.isExactSeq() && second.isExactSeq()
+            && first.tags.find { it.startsWith("&") } == null
+            && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
+        println(first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) }).format())
+    } else {
+        println(first.format())
+    }
+}
+fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     val i = iterator()
     var first = i.nextOrNull()
     var second = i.nextOrNull()
-    while (first != null) {
-        task(first, second)
-        first = second
-        second = i.nextOrNull()
-    }
-}
-fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
-
-fun Sequence<Entry>.stripTimeSpentTags() {
-    forEachPair { first, second ->
-        val timeSpent = first.getTimeSpent() ?: 0
-        if (timeSpent > 0
-                && second != null
-                && first.isExactSeq() && second.isExactSeq()
-                && first.tags.find { it.startsWith("&") } == null
-                && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
-            println(first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) }).format())
-        } else {
-            println(first.format())
+    return generateSequence {
+        if (first == null) null else {
+            val result = Pair(first!!, second)
+            first = second
+            second = i.nextOrNull()
+            result
         }
     }
 }
+fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
 fun main() {
     parse(System.`in`.bufferedReader()).stripTimeSpentTags()
