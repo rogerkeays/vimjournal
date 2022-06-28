@@ -169,13 +169,13 @@ fun def_getDateTime() {
 fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
-fun def_isExactSeq() {
-    Entry("20000101_0000").isExactSeq() returns true
-    Entry("20000101_XXXX").isExactSeq() returns false
-    Entry("XXXXXXXX_XXXX").isExactSeq() returns false
-    Entry("20000101_0000", seqtype=".").isExactSeq() returns false
+fun def_isExact() {
+    Entry("20000101_0000").isExact() returns true
+    Entry("20000101_XXXX").isExact() returns false
+    Entry("XXXXXXXX_XXXX").isExact() returns false
+    Entry("20000101_0000", seqtype=".").isExact() returns false
 }
-fun Entry.isExactSeq() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
+fun Entry.isExact() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
 fun def_getTimeSpent() {
@@ -395,7 +395,7 @@ fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first
     val timeSpent = first.getTimeSpent() ?: 0
     if (timeSpent > 0
             && second != null
-            && first.isExactSeq() && second.isExactSeq()
+            && first.isExact() && second.isExact()
             && first.tags.find { it.startsWith("&") } == null
             && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
         first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
@@ -415,7 +415,7 @@ fun test() {
     def_parseEntry()
     def_parse()
     def_getDateTime()
-    def_isExactSeq()
+    def_isExact()
     def_getTimeSpent()
     def_getSkips()
     def_collectTimeSpent()
