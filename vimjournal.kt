@@ -338,14 +338,17 @@ fun def_collectTimeSpentOn() {
          Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
          Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2x"] returns null
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("/code", "=p1")),
+         Entry("20000101_0015", tags=listOf("/debug")),
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
+        .collectTimeSpentOn('=')[""] returns 25
+}
+fun Sequence<Entry>.collectTimeSpentOn(tagChar: Char) = collectTimeSpent { entry -> 
+    entry.tags.find { it.startsWith(tagChar) } != null
 }
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
-}
-fun Sequence<Entry>.printTimeSpentInHoursOn(tag: String) {
-    collectTimeSpentOn(tag).entries.forEach { 
-        println(String.format("% 8.2f %s", it.value / 60.0, it.key)) 
-    }
 }
 
 fun def_pairs() {
@@ -405,7 +408,8 @@ fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first
 }
 
 fun main() {
-    parse(System.`in`.bufferedReader()).scrubTimeSpentTags().forEach { println(it.format()) }
+    parse(System.`in`.bufferedReader())
+        .collectTimeSpentOn('=').entries.forEach { println(String.format("% 8.2f %s", it.value / 60.0, it.key)) }
 }
 
 fun test() {
