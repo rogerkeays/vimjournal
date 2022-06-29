@@ -178,23 +178,23 @@ fun def_isExact() {
 fun Entry.isExact() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
-fun def_getTimeClaimed() {
-    Entry("XXXXXXXX_XXXX").getTimeClaimed() returns null
-    Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTimeClaimed() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTimeClaimed() returns null
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTimeClaimed() returns 15
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTimeClaimed() returns 30
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code!")).getTimeClaimed() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTimeClaimed() returns 0
-    Entry("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTimeClaimed() returns 15
+fun def_getTaggedDuration() {
+    Entry("XXXXXXXX_XXXX").getTaggedDuration() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTaggedDuration() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTaggedDuration() returns null
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTaggedDuration() returns 15
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTaggedDuration() returns 30
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!")).getTaggedDuration() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTaggedDuration() returns 0
+    Entry("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTaggedDuration() returns 15
 }
-fun Entry.getTimeClaimed(): Int? {
-    val timeSpentTag = tags.filter { it.matches(timeSpentRegex) }.lastOrNull()
-    if (timeSpentTag == null) return null
-    if (timeSpentTag.endsWith("!")) return 0
-    return timeSpentTag.substring(1).toInt()
+fun Entry.getTaggedDuration(): Int? {
+    val durationTag = tags.filter { it.matches(durationRegex) }.lastOrNull()
+    if (durationTag == null) return null
+    if (durationTag.endsWith("!")) return 0
+    return durationTag.substring(1).toInt()
 }
-val timeSpentRegex = Regex("(\\+[0-9]+|/.*!)")
+val durationRegex = Regex("(\\+[0-9]+|/.*!)")
 
 fun def_getSkips() {
     Entry("XXXXXXXX_XXXX").getSkips() returns 0
@@ -281,21 +281,21 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
     while (!window.isEmpty()) {
         val current = window.remove()
         if (filter.invoke(current)) {
-            var timeSpent = current.getTimeClaimed()
-            if (timeSpent != null) {
-                totals.inc(current, timeSpent)
+            var duration = current.getTaggedDuration()
+            if (duration != null) {
+                totals.inc(current, duration)
                 if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
                    val next = i.next()
                    window.add(next)
-                   if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(timeSpent.toLong()))
+                   if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(duration.toLong()))
                        System.err.println("WARNING: time claim overlaps next entry: ${current.format()}")
                 }
             } else {
                 try {
                     val consume = current.getSkips() + 1
                     while (consume > window.size) { window.add(i.next()) }
-                    timeSpent = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
-                    totals.inc(current, timeSpent)
+                    duration = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
+                    totals.inc(current, duration)
                 } catch (e: NoSuchElementException) {
                     totals.inc(current, 0)
                 }
@@ -378,30 +378,30 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
 }
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-fun def_scrubTimeSpentTags() {
+fun def_stripDurationTags() {
     sequenceOf(
          Entry("20000101_0030", tags=listOf("+10")),
          Entry("20000101_0040"))
-        .scrubTimeSpentTags().first().tags.contains("+10") returns false
+        .stripDurationTags().first().tags.contains("+10") returns false
     sequenceOf(
          Entry("20000101_0030", tags=listOf("+10", "&")),
          Entry("20000101_0040"))
-        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+        .stripDurationTags().first().tags.contains("+10") returns true
     sequenceOf(
          Entry("20000101_0030", tags=listOf("+10")),
          Entry("20000101_0045"))
-        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+        .stripDurationTags().first().tags.contains("+10") returns true
     sequenceOf(
          Entry("XXXXXXXX_XXXX", tags=listOf("+10")),
          Entry("20000101_0010"))
-        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+        .stripDurationTags().first().tags.contains("+10") returns true
     sequenceOf(
          Entry("20000101_0030", tags=listOf("+10")),
          Entry("XXXXXXXX_XXXX"))
-        .scrubTimeSpentTags().first().tags.contains("+10") returns true
+        .stripDurationTags().first().tags.contains("+10") returns true
 }
-fun Sequence<Entry>.scrubTimeSpentTags(): Sequence<Entry> = pairs().map { (first, second) ->
-    val timeSpent = first.getTimeClaimed() ?: 0
+fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first, second) ->
+    val timeSpent = first.getTaggedDuration() ?: 0
     if (timeSpent > 0
             && second != null
             && first.isExact() && second.isExact()
@@ -426,12 +426,12 @@ fun test() {
     def_parse()
     def_getDateTime()
     def_isExact()
-    def_getTimeClaimed()
+    def_getTaggedDuration()
     def_getSkips()
     def_collectTimeSpent()
     def_collectTimeSpentOn()
     def_pairs()
-    def_scrubTimeSpentTags()
+    def_stripDurationTags()
 }
 
 // kotlin.test not on the default classpath, so use our own test functions
