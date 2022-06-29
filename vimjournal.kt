@@ -296,6 +296,45 @@ fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequen
     }
 }
 
+fun def_sumDurations() {
+    sequenceOf<Entry>().sumDurations() returns 0
+    sequenceOf(
+         Entry("20000101_0000"))
+        .sumDurations() returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("+15")))
+        .sumDurations() returns 15
+    sequenceOf(
+         Entry("20000101_0000"),
+         Entry("20000101_0015"))
+        .sumDurations() returns 15
+    sequenceOf(
+         Entry("20000101_0000"),
+         Entry("20000101_0015", tags=listOf("+10")))
+        .sumDurations() returns 25
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("+10")),
+         Entry("20000101_0145"),
+         Entry("20000101_0230"))
+        .sumDurations() returns 55
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("&")),
+         Entry("20000102_1045"),
+         Entry("20000102_1115"))
+        .sumDurations() returns 75
+}
+fun Sequence<Entry>.sumDurations(filter: (Entry) -> Boolean = { true }): Int {
+    var total = 0
+    withDurations(filter).forEach { (entry, duration) -> total += duration }
+    return total;
+}
+fun Sequence<Entry>.sumDurationsFor(tagChar: Char) = sumDurations { entry -> 
+    entry.tags.find { it.startsWith(tagChar) } != null
+}
+fun Sequence<Entry>.sumDurationsFor(tag: String) = sumDurations { entry -> 
+    entry.tags.find { it == tag || it.startsWith("$tag.") } != null
+}
+
 fun def_sumDurationsByTag() {
     sequenceOf<Entry>().sumDurationsByTag() returns mapOf<String, Int>()
     sequenceOf(
@@ -425,12 +464,12 @@ fun def_stripDurationTags() {
         .stripDurationTags().first().tags.contains("+10") returns true
 }
 fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first, second) ->
-    val timeSpent = first.getTaggedDuration() ?: 0
-    if (timeSpent > 0
+    val duration = first.getTaggedDuration() ?: 0
+    if (duration > 0
             && second != null
             && first.isExact() && second.isExact()
             && first.tags.find { it.startsWith("&") } == null
-            && second.getDateTime() == first.getDateTime().plusMinutes(timeSpent.toLong())) {
+            && second.getDateTime() == first.getDateTime().plusMinutes(duration.toLong())) {
         first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
     } else {
         first
@@ -454,6 +493,8 @@ fun test() {
     def_getSkips()
     def_pairs()
     def_withDurations()
+    def_sumDurations()
+    def_sumDurationsFor()
     def_sumDurationsByTag()
     def_sumDurationsByTagFor()
     def_stripDurationTags()
