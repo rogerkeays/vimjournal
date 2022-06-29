@@ -330,7 +330,7 @@ fun def_sumDurations() {
 fun Sequence<Entry>.sumDurations(filter: (Entry) -> Boolean = { true }): Int {
     var total = 0
     withDurations(filter).forEach { (entry, duration) -> total += duration }
-    return total;
+    return total
 }
 fun Sequence<Entry>.sumDurationsFor(tagChar: Char) = sumDurations { entry -> 
     entry.tags.find { it.startsWith(tagChar) } != null
@@ -498,7 +498,6 @@ fun test() {
     def_pairs()
     def_withDurations()
     def_sumDurations()
-    def_sumDurationsFor()
     def_sumDurationsByTag()
     def_sumDurationsByTagFor()
     def_stripDurationTags()
