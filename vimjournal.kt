@@ -161,14 +161,6 @@ fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
 }
 val linefeed = System.getProperty("line.separator")
 
-fun def_getDateTime() {
-    Entry("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
-    { Entry("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
-    { Entry("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
-}
-fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
-val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
-
 fun def_isExact() {
     Entry("20000101_0000").isExact() returns true
     Entry("20000101_XXXX").isExact() returns false
@@ -177,6 +169,14 @@ fun def_isExact() {
 }
 fun Entry.isExact() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
+
+fun def_getDateTime() {
+    Entry("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
+    { Entry("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
+    { Entry("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
+}
+fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
+val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
 fun def_getTaggedDuration() {
     Entry("XXXXXXXX_XXXX").getTaggedDuration() returns null
@@ -214,21 +214,98 @@ fun Entry.getSkips(): Int {
 }
 val skipsRegex = Regex("&[0-9]*")
 
+fun def_pairs() {
+    sequenceOf<Int>().pairs().toList() returns listOf<Int>()
+    sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
+    sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
+    sequenceOf(1, 2, 3).pairs().toList() returns listOf(Pair(1, 2), Pair(2, 3), Pair(3, null))
+}
+fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
+    val i = iterator()
+    var first = i.nextOrNull()
+    var second = i.nextOrNull()
+    return generateSequence {
+        if (first == null) null else {
+            val result = Pair(first!!, second)
+            first = second
+            second = i.nextOrNull()
+            result
+        }
+    }
+}
+fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
+
+fun def_withDurations() {
+    sequenceOf<Entry>().withDurations().count() returns 0
+    sequenceOf(
+         Entry("20000101_0000"))
+        .withDurations().first().second returns 0
+    sequenceOf(
+         Entry("20000101_0000", tags=listOf("+15")))
+        .withDurations().first().second returns 15
+    sequenceOf(
+         Entry("20000101_0000"),
+         Entry("20000101_0015"),
+         Entry("20000101_0030", tags=listOf("+10")))
+        .withDurations().map { it.second }.toList() returns listOf(15, 15, 10)
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("&")),
+         Entry("20000102_1045"),
+         Entry("20000102_1115"))
+        .withDurations().first().second returns 45
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("+5", "&")),
+         Entry("20000102_1045"),
+         Entry("20000102_1115"))
+        .withDurations().first().second returns 5
+    sequenceOf(
+         Entry("20000102_1030", tags=listOf("&2")),
+         Entry("20000102_1045"),
+         Entry("20000102_1115"),
+         Entry("20000102_1145"))
+        .withDurations().first().second returns 75
+}
+fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequence<Pair<Entry, Int>> {
+    val i = iterator()
+    val window = LinkedList<Entry>()
+    return generateSequence {
+        while (window.isNotEmpty() || i.hasNext()) {
+            val current = if (window.isNotEmpty()) window.remove() else i.next()
+            if (filter.invoke(current)) {
+                var duration = current.getTaggedDuration()
+                if (duration != null) {
+                    if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
+                       val next = i.next()
+                       window.add(next)
+                       if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(duration.toLong()))
+                           System.err.println("WARNING: tagged duration overlaps next entry: ${current.format()}")
+                    }
+                } else {
+                    try {
+                        val consume = current.getSkips() + 1
+                        while (consume > window.size) { window.add(i.next()) }
+                        duration = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
+                    } catch (e: NoSuchElementException) {
+                        duration = 0
+                    }
+                }
+                return@generateSequence Pair(current, duration!!)
+            }
+        }
+        return@generateSequence null
+    }
+}
+
+
 fun def_collectTimeSpent() {
     sequenceOf<Entry>()
-        .collectTimeSpent()[""] returns 0
-    sequenceOf(
-         Entry("20000101_0000", tags=listOf("=p1")))
-        .collectTimeSpent()[""] returns 0
+        .collectTimeSpent() returns mapOf<String, Int>()
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1")))
         .collectTimeSpent()["=p1"] returns 0
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
         .collectTimeSpent()["=p1"] returns 15
-    sequenceOf(
-         Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpent()[""] returns 15
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
         .collectTimeSpent()["=p2"] returns null
@@ -274,47 +351,18 @@ fun def_collectTimeSpent() {
         .collectTimeSpent()["=p3"] returns 150
 }
 fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
-    var totals = mutableMapOf("" to 0).toSortedMap()
-    val i = iterator()
-    val window = LinkedList<Entry>()
-    if (i.hasNext()) window.add(i.next())
-    while (!window.isEmpty()) {
-        val current = window.remove()
-        if (filter.invoke(current)) {
-            var duration = current.getTaggedDuration()
-            if (duration != null) {
-                totals.inc(current, duration)
-                if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
-                   val next = i.next()
-                   window.add(next)
-                   if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(duration.toLong()))
-                       System.err.println("WARNING: time claim overlaps next entry: ${current.format()}")
-                }
-            } else {
-                try {
-                    val consume = current.getSkips() + 1
-                    while (consume > window.size) { window.add(i.next()) }
-                    duration = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
-                    totals.inc(current, duration)
-                } catch (e: NoSuchElementException) {
-                    totals.inc(current, 0)
-                }
+    var totals = mutableMapOf<String, Int>().toSortedMap()
+    withDurations(filter).forEach { (entry, duration) ->
+        for (tag in entry.tags) {
+            if (!tag.matches(excludeTagRegex)) {
+                totals.put(tag, totals.get(tag)?.plus(duration) ?: duration)
             }
         }
-        if (window.isEmpty() && i.hasNext()) window.add(i.next())
     }
     return totals;
 }
-fun MutableMap<String, Int>.inc(entry: Entry, amount: Int) {
-    for (tag in entry.tags) {
-        if (!tag.matches(dontIncRegex)) {
-            put(tag, get(tag)?.plus(amount) ?: amount)
-        }
-    }
-    put(entry.zone, get(entry.zone)?.plus(amount) ?: 0)
-    put("", get("")?.plus(amount) ?: 0)
-}
-val dontIncRegex = Regex("^\\+[0-9]+")
+val excludeTagRegex = Regex("^\\+[0-9]+")
+
 
 fun def_collectTimeSpentOn() {
     sequenceOf(
@@ -344,11 +392,6 @@ fun def_collectTimeSpentOn() {
          Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
          Entry("20000101_0230", tags=listOf("/cook")))
         .collectTimeSpentOn("=p2")["=p2x"] returns null
-    sequenceOf(
-         Entry("20000101_0000", tags=listOf("/code", "=p1")),
-         Entry("20000101_0015", tags=listOf("/debug")),
-         Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
-        .collectTimeSpentOn('=')[""] returns 25
 }
 fun Sequence<Entry>.collectTimeSpentOn(tagChar: Char) = collectTimeSpent { entry -> 
     entry.tags.find { it.startsWith(tagChar) } != null
@@ -356,27 +399,6 @@ fun Sequence<Entry>.collectTimeSpentOn(tagChar: Char) = collectTimeSpent { entry
 fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
-
-fun def_pairs() {
-    sequenceOf<Int>().pairs().toList() returns listOf<Int>()
-    sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
-    sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
-    sequenceOf(1, 2, 3).pairs().toList() returns listOf(Pair(1, 2), Pair(2, 3), Pair(3, null))
-}
-fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
-    val i = iterator()
-    var first = i.nextOrNull()
-    var second = i.nextOrNull()
-    return generateSequence {
-        if (first == null) null else {
-            val result = Pair(first!!, second)
-            first = second
-            second = i.nextOrNull()
-            result
-        }
-    }
-}
-fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
 fun def_stripDurationTags() {
     sequenceOf(
@@ -424,13 +446,14 @@ fun test() {
     def_parseTags()
     def_parseEntry()
     def_parse()
-    def_getDateTime()
     def_isExact()
+    def_getDateTime()
     def_getTaggedDuration()
     def_getSkips()
+    def_pairs()
+    def_withDurations()
     def_collectTimeSpent()
     def_collectTimeSpentOn()
-    def_pairs()
     def_stripDurationTags()
 }
 
