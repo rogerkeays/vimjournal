@@ -296,61 +296,59 @@ fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequen
     }
 }
 
-
-fun def_collectTimeSpent() {
-    sequenceOf<Entry>()
-        .collectTimeSpent() returns mapOf<String, Int>()
+fun def_sumDurationsByTag() {
+    sequenceOf<Entry>().sumDurationsByTag() returns mapOf<String, Int>()
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1")))
-        .collectTimeSpent()["=p1"] returns 0
+        .sumDurationsByTag()["=p1"] returns 0
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpent()["=p1"] returns 15
+        .sumDurationsByTag()["=p1"] returns 15
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpent()["=p2"] returns null
+        .sumDurationsByTag()["=p2"] returns null
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpent().containsKey("+15") returns false
+        .sumDurationsByTag().containsKey("+15") returns false
     sequenceOf(
          Entry("20000101_0000", tags=listOf("/code", "=p1")),
          Entry("20000101_0015", tags=listOf("/debug", "=p1")),
          Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
-        .collectTimeSpent()["=p1"] returns 30
+        .sumDurationsByTag()["=p1"] returns 30
     sequenceOf(
          Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
          Entry("20000101_0145", tags=listOf("/debug", "=p2")),
          Entry("20000101_0230", tags=listOf("/cook")))
-        .collectTimeSpent()["=p2"] returns 55
+        .sumDurationsByTag()["=p2"] returns 55
     sequenceOf(
          Entry("20000102_1030", tags=listOf("/wake", "&")),
          Entry("20000102_1045", tags=listOf("/recall")),
          Entry("20000102_1115", tags=listOf("/cook")))
-        .collectTimeSpent()["/wake"] returns 45
+        .sumDurationsByTag()["/wake"] returns 45
     sequenceOf(
          Entry("20000102_1030", tags=listOf("/wake", "+5", "&")),
          Entry("20000102_1045", tags=listOf("/recall")),
          Entry("20000102_1115", tags=listOf("/cook")))
-        .collectTimeSpent()["/wake"] returns 5
+        .sumDurationsByTag()["/wake"] returns 5
     sequenceOf(
          Entry("20000102_1030", tags=listOf("/wake", "&2")),
          Entry("20000102_1045", tags=listOf("/recall")),
          Entry("20000102_1115", tags=listOf("/stretch")),
          Entry("20000102_1145", tags=listOf("/cook")))
-        .collectTimeSpent()["/wake"] returns 75
+        .sumDurationsByTag()["/wake"] returns 75
     sequenceOf(
          Entry("20000102_1200", tags=listOf("/code", "=p3", "&")),
          Entry("20000102_1230", tags=listOf("/search", "=p3")),
          Entry("20000102_1300", tags=listOf("/cook")))
-        .collectTimeSpent()["=p3"] returns 90
+        .sumDurationsByTag()["=p3"] returns 90
     sequenceOf(
          Entry("20000102_1200", tags=listOf("/code", "=p3", "&2")),
          Entry("20000102_1230", tags=listOf("/search", "=p3")),
          Entry("20000102_1300", tags=listOf("/cook")),
          Entry("20000102_1400", tags=listOf("/trawl")))
-        .collectTimeSpent()["=p3"] returns 150
+        .sumDurationsByTag()["=p3"] returns 150
 }
-fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
+fun Sequence<Entry>.sumDurationsByTag(filter: (Entry) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf<String, Int>().toSortedMap()
     withDurations(filter).forEach { (entry, duration) ->
         for (tag in entry.tags) {
@@ -363,40 +361,44 @@ fun Sequence<Entry>.collectTimeSpent(filter: (Entry) -> Boolean = { true }): Map
 }
 val excludeTagRegex = Regex("^\\+[0-9]+")
 
-
-fun def_collectTimeSpentOn() {
+fun def_sumDurationsByTagFor() {
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1")))
-        .collectTimeSpentOn("=p1")["=p1"] returns 0
+        .sumDurationsByTagFor("=p1")["=p1"] returns 0
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpentOn("=p1")["=p1"] returns 15
+        .sumDurationsByTagFor("=p1")["=p1"] returns 15
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpentOn("=p2")["=p1"] returns null
+        .sumDurationsByTagFor("=p2")["=p1"] returns null
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1", "+15")))
-        .collectTimeSpentOn("=p1")["=p2"] returns null
+        .sumDurationsByTagFor("=p1")["=p2"] returns null
     sequenceOf(
          Entry("20000101_0000", tags=listOf("/code", "=p1")),
          Entry("20000101_0015", tags=listOf("/debug", "=p1")),
          Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")))
-        .collectTimeSpentOn("=p1")["/code"] returns 15
+        .sumDurationsByTagFor("=p1")["/code"] returns 15
     sequenceOf(
          Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
          Entry("20000101_0145", tags=listOf("/debug", "=p2.x")),
          Entry("20000101_0230", tags=listOf("/cook")))
-        .collectTimeSpentOn("=p2")["=p2.x"] returns 45
+        .sumDurationsByTagFor("=p2")["=p2.x"] returns 45
     sequenceOf(
          Entry("20000101_0030", tags=listOf("/code", "+10", "=p2")),
          Entry("20000101_0145", tags=listOf("/debug", "=p2x")),
          Entry("20000101_0230", tags=listOf("/cook")))
-        .collectTimeSpentOn("=p2")["=p2x"] returns null
+        .sumDurationsByTagFor("=p2")["=p2x"] returns null
+    sequenceOf(
+         Entry("20000101_0030", tags=listOf("/code", "+10", "=p1")),
+         Entry("20000101_0145", tags=listOf("/code", "=p2")),
+         Entry("20000101_0230", tags=listOf("/cook")))
+        .sumDurationsByTagFor('=')["/code"] returns 55
 }
-fun Sequence<Entry>.collectTimeSpentOn(tagChar: Char) = collectTimeSpent { entry -> 
+fun Sequence<Entry>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { entry -> 
     entry.tags.find { it.startsWith(tagChar) } != null
 }
-fun Sequence<Entry>.collectTimeSpentOn(tag: String) = collectTimeSpent { entry -> 
+fun Sequence<Entry>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { entry -> 
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
@@ -437,7 +439,7 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
 
 fun main() {
     parse(System.`in`.bufferedReader())
-        .collectTimeSpentOn('=').entries.forEach { println(String.format("% 8.2f %s", it.value / 60.0, it.key)) }
+        .sumDurationsByTagFor('=').entries.forEach { println(String.format("% 8.2f %s", it.value / 60.0, it.key)) }
 }
 
 fun test() {
@@ -452,8 +454,8 @@ fun test() {
     def_getSkips()
     def_pairs()
     def_withDurations()
-    def_collectTimeSpent()
-    def_collectTimeSpentOn()
+    def_sumDurationsByTag()
+    def_sumDurationsByTagFor()
     def_stripDurationTags()
 }
 
