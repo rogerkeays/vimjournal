@@ -275,10 +275,14 @@ fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequen
                 var duration = current.getTaggedDuration()
                 if (duration != null) {
                     if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
-                       val next = i.next()
-                       window.add(next)
-                       if (next.isExact() && next.getDateTime() < current.getDateTime().plusMinutes(duration.toLong()))
-                           System.err.println("WARNING: tagged duration overlaps next entry: ${current.format()}")
+                        val next = i.next()
+                        if (next.isExact()) {
+                            val stop = current.getDateTime().plusMinutes(duration.toLong())
+                            val overlap = next.getDateTime().until(stop, MINUTES)
+                            if (overlap > 0) System.err.println(
+                                "WARNING: tagged duration overlaps next entry by $overlap minutes: ${current.format()}")
+                        }
+                        window.add(next)
                     }
                 } else {
                     try {
