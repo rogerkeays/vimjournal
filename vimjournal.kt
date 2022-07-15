@@ -16,6 +16,7 @@ fun main(args: Array<String>) {
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
+        "test" -> { test() }
         else -> println("usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]")
     }
 }
@@ -139,12 +140,14 @@ fun parseEntry(header: String, body: String): Entry {
         rating = header.slice(18..18).trim(),
         summary = header.slice(20..tagIndex).trim(),
         tags = parseTags(header.drop(tagIndex + 1)),
-        body = body.trim())
+        body = body)
 }
 
 fun def_parse() {
     parse("XXXXXXXX_XXXX ABC  │ hello world").first().summary returns "hello world"
     parse("XXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().body returns "body"
+    parse("XXXXXXXX_XXXX ABC  │ hello world\n\n  body\n").first().body returns "  body"
+    parse("XXXXXXXX_XXXX ABC  │ hello world\n\n  body").first().body returns "  body"
     parse("XXXXXXXX_XXXX ABC  │ hello world\nXXXXXXXX_XXXX ABC  │ hello world2").count() returns 2
     parse("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar\n\nbody goes here\n\n").first().body returns "body goes here"
     parse("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n").first().body returns "body goes here"
@@ -169,7 +172,7 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry>
         body += linefeed + line
     }
     input.reset()
-    if (header != null) parseEntry(header, body) else null
+    if (header != null) parseEntry(header, body.trim('\n')) else null
 }
 val linefeed = System.getProperty("line.separator")
 
