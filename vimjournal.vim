@@ -1,41 +1,5 @@
-
-autocmd BufRead,BufNewFile *.log setl filetype=journal
-
-" jump to the end of the file when first loaded
-function JumpEnd()
-  if !exists("b:vimjournal_jumped")
-    let b:vimjournal_jumped = 1
-    normal G
-  endif
-endfunction
-autocmd BufWinEnter *.log call JumpEnd()
-
-"autocmd FileType journal
-autocmd BufRead *.log setl foldmethod=expr foldtext=getline(v:foldstart) fillchars= 
-autocmd BufRead *.log setl foldexpr=strcharpart(getline(v\:lnum),19,1)=='│'?'>1'\:1
-autocmd BufRead *.log setl autoindent sw=2 ts=8 nrformats=
-autocmd BufRead *.log setl wrap linebreak breakindent showbreak=>\ 
-
-" more accurate regexp for folding, but much slower
-"autocmd BufRead *.log setl foldexpr=getline(v\:lnum)=~'^[0-9A-Za-z]\\{8\\}_[0-9A-Za-z]\\{4\\}.*[│\|]'?'>1'\:1
-
-" commands to jump to a random line for flashcard-like quizzes
-autocmd BufRead *.log command! RandomMatch execute 'normal! '.matchstr(system('grep -n -o "'.@/.'" '.expand('%:p').' | shuf -n 1'), '^[0-9]*').'G'
-autocmd BufRead *.log command! RandomLine execute 'normal! '.matchstr(system('od -vAn -N3 -tu4 /dev/urandom'), '^\_s*\zs.\{-}\ze\_s*$') % line('$').'G'
-
-autocmd BufRead *.log nnoremap <TAB> za
-autocmd BufRead *.log nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> KEP  │ <ESC>zm1GGA
-autocmd BufRead *.log nnoremap <C-o> yyp:s/.│.*/ │ <CR>A
-autocmd BufRead *.log nnoremap <C-l> :Explore /home/guybrush/journal/history<CR>
-"autocmd BufRead *.log nnoremap ç 020l<C-a>:w<CR>zc:RandomMatch<CR>zz
-"autocmd BufRead *.log nnoremap Ç 020lr0:w<CR>zc:RandomMatch<CR>zz
-autocmd BufRead *.log nnoremap º 020l<C-a>:w<CR>zcnzz
-autocmd BufRead *.log nnoremap ª 020lr0:w<CR>zcnzz
-autocmd BufRead *.log inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
-autocmd BufRead *.log inoremap <C-b> │
-autocmd BufRead *.log inoremap <C-x> ✘
-autocmd BufRead *.log inoremap <C-z> ✔
-
+"
+" vimjournal plugin
 "
 " tagging scheme:
 "   / category          (file)
@@ -47,6 +11,51 @@ autocmd BufRead *.log inoremap <C-z> ✔
 "   @ place             (global)
 "   : data, url         (entry)
 "   & skips             (entry)
+"
+
+autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
+
+" presentation and code folding
+autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
+autocmd FileType vimjournal setl wrap linebreak breakindent showbreak=>\ 
+autocmd FileType vimjournal setl foldmethod=expr foldtext=getline(v:foldstart) fillchars= 
+autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum),19,1)=='│'?'>1'\:1
+
+" keyboard shortcuts
+autocmd FileType vimjournal nnoremap <TAB> za
+autocmd FileType vimjournal nnoremap <C-l> :Explore /home/guybrush/journal/history<CR>
+autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> KEP  │ <ESC>zm1GGA
+autocmd FileType vimjournal nnoremap <C-o> yyp:s/.│.*/ │ <CR>A
+autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
+autocmd FileType vimjournal inoremap <C-b> │
+autocmd FileType vimjournal inoremap <C-x> ✘
+autocmd FileType vimjournal inoremap <C-z> ✔
+autocmd FileType vimjournal nnoremap º 020l<C-a>:w<CR>zcnzz   " flashcard pass
+autocmd FileType vimjournal nnoremap ª 020lr0:w<CR>zcnzz      " flashcard fail
+
+" autocomplete configuration
+autocmd FileType vimjournal setl complete=.                      " search only current buffer (faster)
+autocmd FileType vimjournal setl completeopt=                    " disable autocomplete menu (annoying)
+autocmd FileType vimjournal setl iskeyword+=@-@,/,#,=,!,>,:,-    " include tag symbols in autocomplete
+autocmd FileType vimjournal setl iskeyword-=_                    " word navigation inside timestamps
+
+" jump to the end of the file when first loaded
+function JumpEnd()
+  if !exists("b:vimjournal_jumped")
+    let b:vimjournal_jumped = 1
+    normal G
+  endif
+endfunction
+autocmd FileType vimjournal call JumpEnd()
+
+" flashcard support: jump to a random line or random line matching the last search
+autocmd FileType vimjournal command! RandomLine execute 'normal! '.matchstr(system('od -vAn -N3 -tu4 /dev/urandom'), '^\_s*\zs.\{-}\ze\_s*$') % line('$').'G'
+autocmd FileType vimjournal command! RandomMatch execute 'normal! '.matchstr(system('grep -n -o "'.@/.'" '.expand('%:p').' | shuf -n 1'), '^[0-9]*').'G'
+
+
+"
+" syntax definitions: uses *.log because they don't work with `FileType vimjournal`
+" unless you create a separate file in .vim/syntax, which makes installation more screwy
 "
 
 " space then a tag character followed by a non-space, another tag or the end of line
@@ -77,16 +86,4 @@ autocmd BufRead *.log hi FiveStar ctermfg=yellow
 autocmd BufRead *.log hi Heading ctermfg=white
 autocmd BufRead *.log hi Comment ctermfg=lightgreen
 autocmd BufRead *.log hi Reference ctermfg=lightyellow
-
-" include tag symbols and hyphens in autocomplete
-autocmd BufRead *.log setl iskeyword+=@-@,/,#,=,!,>,:,-
-
-" recognise _ in datetimes as a word boundary
-autocmd BufRead *.log setl iskeyword-=_
-
-" only autocomplete on the current buffer to improve performance
-autocmd BufRead *.log setl complete=.
-
-" disable the autocomplete menu
-autocmd BufRead *.log setl completeopt=
 
