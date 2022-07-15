@@ -8,6 +8,17 @@ import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit.MINUTES
 import java.util.LinkedList
 import java.util.NoSuchElementException
+
+fun main(args: Array<String>) {
+    when (if (args.isNotEmpty()) args[0] else "") {
+        "from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
+        "sort-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
+        "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
+            println(String.format("% 8.2f %s", it.value / 60.0, it.key))
+        }
+        else -> println("usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]")
+    }
+}
   
 data class Entry(
     val seq: String,
@@ -39,6 +50,7 @@ fun Entry.format() = buildString {
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
+fun Entry.print() = println(format())
 
 fun def_isHeader() {
     "00000000_0000 ABC  │".isHeader() returns true
@@ -143,7 +155,7 @@ fun def_parse() {
 }
 fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
-fun parse(input: BufferedReader): Sequence<Entry> = generateSequence {
+fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry> = generateSequence {
     var header = input.readLine()
     while (header != null && !header.isHeader()) {
         header = input.readLine()
@@ -478,11 +490,6 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
     } else {
         first
     }
-}
-
-fun main() {
-    parse(System.`in`.bufferedReader())
-        .sumDurationsByTagFor('=').entries.forEach { println(String.format("% 8.2f %s", it.value / 60.0, it.key)) }
 }
 
 fun test() {
