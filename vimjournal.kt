@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
-        "test" -> { test() }
+        "test" -> test()
         else -> println("usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]")
     }
 }
@@ -158,21 +158,23 @@ fun def_parse() {
 }
 fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
-fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry> = generateSequence {
-    var header = input.readLine()
-    while (header != null && !header.isHeader()) {
-        header = input.readLine()
+fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry> {
+    return generateSequence {
+        var header = input.readLine()
+        while (header != null && !header.isHeader()) {
+            header = input.readLine()
+        }
+        var body = ""
+        var line: String?
+        while (true) {
+            input.mark(8192)
+            line = input.readLine()
+            if (line == null || line.isHeader()) break
+            body += linefeed + line
+        }
+        input.reset()
+        if (header != null) parseEntry(header, body.trim('\n')) else null
     }
-    var body = ""
-    var line: String?
-    while (true) {
-        input.mark(8192)
-        line = input.readLine()
-        if (line == null || line.isHeader()) break
-        body += linefeed + line
-    }
-    input.reset()
-    if (header != null) parseEntry(header, body.trim('\n')) else null
 }
 val linefeed = System.getProperty("line.separator")
 
