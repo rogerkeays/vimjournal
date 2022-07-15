@@ -1,6 +1,8 @@
 "
 " vimjournal plugin
 "
+" to install, save (or symlink) to your $HOME/.vim/ftdetect directory
+"
 " tagging scheme:
 "   / category          (file)
 "   + person, duration  (global)
