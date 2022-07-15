@@ -21,12 +21,12 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
 autocmd FileType vimjournal setl wrap linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=expr foldtext=getline(v:foldstart) fillchars= 
-autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum),19,1)=='│'?'>1'\:1
+autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum),15,1)=='│'?'>1'\:1
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
 autocmd FileType vimjournal nnoremap <C-l> :Explore ~/journal/history<CR>
-autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> KEP  │ <ESC>zm1GGA
+autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR>  │ <ESC>zm1GGA
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.│.*/ │ <CR>A
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
 autocmd FileType vimjournal inoremap <C-b> │
@@ -54,7 +54,6 @@ autocmd FileType vimjournal call JumpEnd()
 autocmd FileType vimjournal command! RandomLine execute 'normal! '.matchstr(system('od -vAn -N3 -tu4 /dev/urandom'), '^\_s*\zs.\{-}\ze\_s*$') % line('$').'G'
 autocmd FileType vimjournal command! RandomMatch execute 'normal! '.matchstr(system('grep -n -o "'.@/.'" '.expand('%:p').' | shuf -n 1'), '^[0-9]*').'G'
 
-
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
 " unless you create a separate file in .vim/syntax, which makes installation more screwy
@@ -64,13 +63,13 @@ autocmd FileType vimjournal command! RandomMatch execute 'normal! '.matchstr(sys
 autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ │]\| \+[/+#=!>@:&]\| *$\).*" contained
 
 autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}[!. ]... .*\ze.[│|]" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[│|].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[x/1][│|].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[-2][│|].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[=~3][│|].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[+·4][│|].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}[!_][0-9A-Za-z]\{4\}.*[*5][│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.\ze.[│|]" contained
+autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}. [│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.[x1][│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.[-2][│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.[=~3][│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.[+4][│|].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}.[*5][│|].*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading "^==[^ ].*$"
 autocmd BufRead *.log syn match Heading "^## .*$"
 autocmd BufRead *.log syn match Comment "^//.*$"
