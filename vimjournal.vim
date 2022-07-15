@@ -26,7 +26,7 @@ autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum),14,1)=='\
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
-autocmd FileType vimjournal nnoremap <C-l> :Explore ~/journal/history<CR>
+autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/ \|  <CR>A
 autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> \|  
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
