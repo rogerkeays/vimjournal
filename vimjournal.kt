@@ -9,6 +9,12 @@ import java.time.temporal.ChronoUnit.MINUTES
 import java.util.LinkedList
 import java.util.NoSuchElementException
 
+val usage = """
+
+usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]
+
+"""
+
 fun main(args: Array<String>) {
     when (if (args.isNotEmpty()) args[0] else "") {
         "from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
@@ -17,10 +23,10 @@ fun main(args: Array<String>) {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
         "test" -> test()
-        else -> println("usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]")
+        else -> println(usage)
     }
 }
-  
+
 data class Entry(
     val seq: String,
     val summary: String = "",
@@ -335,7 +341,7 @@ fun def_sumDurations() {
 }
 fun Sequence<Entry>.sumDurations(filter: (Entry) -> Boolean = { true }): Int {
     var total = 0
-    withDurations(filter).forEach { (entry, duration) -> total += duration }
+    withDurations(filter).forEach { (_, duration) -> total += duration }
     return total
 }
 fun Sequence<Entry>.sumDurationsFor(tagChar: Char) = sumDurations { entry -> 
@@ -486,27 +492,10 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
     }
 }
 
-fun test() {
-    def_format()
-    def_isHeader()
-    def_parseTags()
-    def_parseEntry()
-    def_parse()
-    def_isExact()
-    def_getDateTime()
-    def_getTaggedDuration()
-    def_getSkips()
-    def_pairs()
-    def_withDurations()
-    def_sumDurations()
-    def_sumDurationsByTag()
-    def_sumDurationsByTagFor()
-    def_stripDurationTags()
-}
-
 // kotlin.test not on the default classpath, so use our own test functions
 infix fun Any?.returns(result: Any?) { 
     if (this != result) throw AssertionError("Expected: $result, got $this") 
+    print(".")
 }
 infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
     try { 
@@ -515,5 +504,16 @@ infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) {
     } catch (e: Throwable) { 
         if (!ex.java.isAssignableFrom(e.javaClass)) throw AssertionError("Expected: $ex, got $e")
     } 
+    print(".")
+}
+fun test(klass: Class<*> = ::test.javaClass.enclosingClass, prefix: String = "def_") {
+    println()
+    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { 
+        print(it.name.drop(prefix.length))
+        print(" ")
+        it(null)
+        println(" ✔")
+    }
+    println("\nAll tests pass\n")
 }
 
