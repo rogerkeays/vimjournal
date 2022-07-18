@@ -23,30 +23,24 @@ fun main(args: Array<String>) {
   
 data class Entry(
     val seq: String,
-    val zone: String = "XXX",
     val summary: String = "",
+    val rating: String = ">",
     val tags: List<String> = listOf(),
     val body: String = "",
-    val rating: String = "",
-    val seqtype: String = "",
 )
 
 fun def_format() {
-    Entry("XXXXXXXX_XXXX", "ABC", "").format() returns "XXXXXXXX_XXXX ABC  │"
-    Entry("XXXXXXXX_XXXX", "ABC", "hello world").format() returns "XXXXXXXX_XXXX ABC  │ hello world"
-    Entry("XXXXXXXX_XXXX", "ABC", "hello world", rating="+").format() returns "XXXXXXXX_XXXX ABC +│ hello world"
-    Entry("XXXXXXXX_XXXX", "ABC", "hello world", seqtype=".").format() returns "XXXXXXXX_XXXX.ABC  │ hello world"
-    Entry("XXXXXXXX_XXXX", "ABC", "hello world", listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX ABC  │ hello world #foo !bar"
-    Entry("XXXXXXXX_XXXX", "ABC", "hello world", body="body").format() returns "XXXXXXXX_XXXX ABC  │ hello world\n\nbody\n"
-    Entry("XXXXXXXX_XXXX", "ABC", "", listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX ABC  │ #foo !bar"
+    Entry("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX |>"
+    Entry("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX |> hello world"
+    Entry("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX |+ hello world"
+    Entry("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX |> hello world #foo !bar"
+    Entry("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX |> hello world\n\nbody\n"
+    Entry("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX |> #foo !bar"
 }
 fun Entry.format() = buildString {
     append(seq)
-    append(seqtype.ifBlank{' '})
-    append(zone)
-    append(' ')
-    append(rating.ifBlank{' '})
-    append('│')
+    append(" |")
+    append(rating)
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
@@ -54,25 +48,24 @@ fun Entry.format() = buildString {
 fun Entry.print() = println(format())
 
 fun def_isHeader() {
-    "00000000_0000 ABC  │".isHeader() returns true
-    "0000XXXX_XXXX ABC  │".isHeader() returns true
-    "20210120_2210 ABC  │".isHeader() returns true
-    "20210120_2210 ABC  │ ".isHeader() returns true
-    "20210120_2210 ABC  │ hello world".isHeader() returns true
-    "20210120_2210.ABC  │ hello world".isHeader() returns true
-    "20210120_2210'ABC  │ hello world".isHeader() returns true
-    "20210120_2210 ABC *│ hello world".isHeader() returns true
-    "20210120_2210 ABC  │ hello world\n".isHeader() returns true
-    "20210120_2210 ABC  │ hello world #truth".isHeader() returns true
-    "0000XXXX_YYYY ABC  │".isHeader() returns false
-    "20210120_2210 ABC │ hello world".isHeader() returns false
-    "20210120_2210 ABC   hello world".isHeader() returns false
-    "202101202210 ABC  │ hello world".isHeader() returns false
+    "00000000_0000 |>".isHeader() returns true
+    "0000XXXX_XXXX |>".isHeader() returns true
+    "0000XXXX_YYYY |>".isHeader() returns true
+    "20210120_2210 |>".isHeader() returns true
+    "20210120_2210 |*".isHeader() returns true
+    "20210120_2210 |> ".isHeader() returns true
+    "20210120_2210 |> hello world".isHeader() returns true
+    "20210120_2210 |> hello world\n".isHeader() returns true
+    "20210120_2210 |> hello world #truth".isHeader() returns true
+    "20210120_2210|> hello world".isHeader() returns false
+    "20210120_2210   hello world".isHeader() returns false
+    "202101202210  |> hello world".isHeader() returns false
     "foo".isHeader() returns false
     "".isHeader() returns false
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
-val headerRegex = Regex("^[0-9X_]{13}[\\p{Punct} ]... .│.*\n?$")
+val markerChars = "->x=~+*"
+val headerRegex = Regex("^[0-9A-Z_]{13} \\|[$markerChars].*\n?$")
 
 fun def_parseTags() {
     parseTags("").isEmpty() returns true
@@ -105,56 +98,53 @@ fun parseTags(input: String): List<String> {
     }
 }
 val tagChars = "/+#=!>@:&"
-val tagStartRegex = Regex("(^| )[$tagChars](?=([^ │]| +[$tagChars]| *$))")
+val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
 fun def_parseEntry() {
-    parseEntry("XXXXXXXX_XXXX ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC")
-    parseEntry("XXXXXXXX_XXXX ABC +│") returns Entry("XXXXXXXX_XXXX", "ABC", rating="+")
-    parseEntry("XXXXXXXX_XXXX.ABC  │") returns Entry("XXXXXXXX_XXXX", "ABC", seqtype=".")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world ") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world!") returns Entry("XXXXXXXX_XXXX", "ABC", "hello world!")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar").tags returns listOf("#tag", "!bar")
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world  #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag '!bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag !bar").summary returns "hello world '#tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world '#tag' !bar").summary returns "hello world '#tag'"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world &1 #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world & '#tag !bar").summary returns "hello world & '#tag"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello world #tag !bar &1").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world").summary returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ hello & world #tag !bar").summary returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX ABC  │ 🩢🩣🩤 #tag !bar").summary returns "🩢🩣🩤"
+    parseEntry("XXXXXXXX_XXXX |>") returns Entry("XXXXXXXX_XXXX")
+    parseEntry("XXXXXXXX_XXXX |+") returns Entry("XXXXXXXX_XXXX", rating="+")
+    parseEntry("XXXXXXXX_XXXX |> hello world") returns Entry("XXXXXXXX_XXXX", "hello world")
+    parseEntry("XXXXXXXX_XXXX |> hello world ") returns Entry("XXXXXXXX_XXXX", "hello world")
+    parseEntry("XXXXXXXX_XXXX |> hello world!") returns Entry("XXXXXXXX_XXXX", "hello world!")
+    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar").tags returns listOf("#tag", "!bar")
+    parseEntry("XXXXXXXX_XXXX |> hello world  #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world #tag '!bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world '#tag !bar").summary returns "hello world '#tag"
+    parseEntry("XXXXXXXX_XXXX |> hello world '#tag' !bar").summary returns "hello world '#tag'"
+    parseEntry("XXXXXXXX_XXXX |> hello world &").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world & #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world &1 #tag !bar").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world & '#tag !bar").summary returns "hello world & '#tag"
+    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar &").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar &1").summary returns "hello world"
+    parseEntry("XXXXXXXX_XXXX |> hello & world").summary returns "hello & world"
+    parseEntry("XXXXXXXX_XXXX |> hello & world #tag !bar").summary returns "hello & world"
+    parseEntry("XXXXXXXX_XXXX |> 🩢🩣🩤 #tag !bar").summary returns "🩢🩣🩤"
 }
 fun parseEntry(header: String) = parseEntry(header, "")
 fun parseEntry(header: String, body: String): Entry {
     val tagIndex = tagStartRegex.find(header)?.range?.start ?: header.lastIndex
     return Entry(
         seq = header.slice(0..12),
-        seqtype = header.slice(13..13).trim(),
-        zone = header.slice(14..16),
-        rating = header.slice(18..18).trim(),
-        summary = header.slice(20..tagIndex).trim(),
+        summary = header.slice(16..tagIndex).trim(),
+        rating = header.slice(15..15).trim(),
         tags = parseTags(header.drop(tagIndex + 1)),
         body = body)
 }
 
 fun def_parse() {
-    parse("XXXXXXXX_XXXX ABC  │ hello world").first().summary returns "hello world"
-    parse("XXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().body returns "body"
-    parse("XXXXXXXX_XXXX ABC  │ hello world\n\n  body\n").first().body returns "  body"
-    parse("XXXXXXXX_XXXX ABC  │ hello world\n\n  body").first().body returns "  body"
-    parse("XXXXXXXX_XXXX ABC  │ hello world\nXXXXXXXX_XXXX ABC  │ hello world2").count() returns 2
-    parse("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar\n\nbody goes here\n\n").first().body returns "body goes here"
-    parse("XXXXXXXX_XXXX ABC  │ hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n").first().body returns "body goes here"
-    parse("XXXXXXXX_XXXX ABC  │ hello world #tag !bar\n\nbody goes here\n").first().tags returns listOf("#tag", "!bar")
-    parse("XXXXXXXX_XXXX ABC  │ hello world #tag !bar\n\nbody #notag goes here\n").first().tags returns listOf("#tag", "!bar")
-    parse("XXXXXXXX_XXXX ABC  │ hello world\n\nbody #notag goes here\n").first().tags.isEmpty() returns true
-    parse("// vim: modeline\nXXXXXXXX_XXXX ABC  │ hello world\nbody\n").first().summary returns "hello world"
+    parse("XXXXXXXX_XXXX |> hello world").first().summary returns "hello world"
+    parse("XXXXXXXX_XXXX |> hello world\nbody\n").first().body returns "body"
+    parse("XXXXXXXX_XXXX |> hello world\n\n  body\n").first().body returns "  body"
+    parse("XXXXXXXX_XXXX |> hello world\n\n  body").first().body returns "  body"
+    parse("XXXXXXXX_XXXX |> hello world\nXXXXXXXX_XXXX |> hello world 2").count() returns 2
+    parse("XXXXXXXX_XXXX |> hello world ##tag !bar\n\nbody goes here\n\n").first().body returns "body goes here"
+    parse("XXXXXXXX_XXXX |> hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n").first().body returns "body goes here"
+    parse("XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody goes here\n").first().tags returns listOf("#tag", "!bar")
+    parse("XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody #notag goes here\n").first().tags returns listOf("#tag", "!bar")
+    parse("XXXXXXXX_XXXX |> hello world\n\nbody #notag goes here\n").first().tags.isEmpty() returns true
+    parse("// vim: modeline\nXXXXXXXX_XXXX |> hello world\nbody\n").first().summary returns "hello world"
 }
 fun parse(file: File) = parse(file.reader().buffered())
 fun parse(input: String) = parse(input.reader().buffered())
@@ -182,9 +172,8 @@ fun def_isExact() {
     Entry("20000101_0000").isExact() returns true
     Entry("20000101_XXXX").isExact() returns false
     Entry("XXXXXXXX_XXXX").isExact() returns false
-    Entry("20000101_0000", seqtype=".").isExact() returns false
 }
-fun Entry.isExact() = seq.matches(exactDateTimeRegex) && seqtype.isEmpty()
+fun Entry.isExact() = seq.matches(exactDateTimeRegex)
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
 fun def_getDateTime() {
