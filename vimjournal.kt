@@ -68,86 +68,86 @@ val markerChars = "->x=~+*"
 val headerRegex = Regex("^[0-9A-Z_]{13} \\|[$markerChars].*\n?$")
 
 fun def_parseTags() {
-    parseTags("").isEmpty() returns true
-    parseTags("#foo") returns listOf("#foo")
-    parseTags("nontag #foo") returns listOf("#foo")
-    parseTags("#foo !bar") returns listOf("#foo", "!bar")
-    parseTags("#foo !bar ") returns listOf("#foo", "!bar")
-    parseTags(" #foo !bar") returns listOf("#foo", "!bar")
-    parseTags("#foo   !bar ") returns listOf("#foo", "!bar")
-    parseTags("##foo !bar ") returns listOf("##foo", "!bar")
-    parseTags("#foo bar !baz") returns listOf("#foo bar", "!baz")
-    parseTags("#foo '#bar !baz") returns listOf("#foo '#bar", "!baz")
-    parseTags("& #foo !bar") returns listOf("&", "#foo", "!bar")
-    parseTags("&  #foo !bar") returns listOf("&", "#foo", "!bar")
-    parseTags("&1 #foo !bar") returns listOf("&1", "#foo", "!bar")
-    parseTags("#foo & !bar") returns listOf("#foo", "&", "!bar")
-    parseTags("#foo & bar") returns listOf("#foo & bar")
-    parseTags("#foo & bar !baz") returns listOf("#foo & bar","!baz")
-    parseTags("#foo bar !baz &") returns listOf("#foo bar", "!baz", "&")
-    parseTags("#foo bar !baz & ") returns listOf("#foo bar", "!baz", "&")
-    parseTags("#foo bar !baz &2") returns listOf("#foo bar", "!baz", "&2")
-    parseTags("#foo bar !baz :https://wikipedia.org/foo") returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
-    parseTags("#foo bar :https://wikipedia.org/foo !baz") returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
+    "".parseTags().isEmpty() returns true
+    "#foo".parseTags() returns listOf("#foo")
+    "nontag #foo".parseTags() returns listOf("#foo")
+    "#foo !bar".parseTags() returns listOf("#foo", "!bar")
+    "#foo !bar ".parseTags() returns listOf("#foo", "!bar")
+    " #foo !bar".parseTags() returns listOf("#foo", "!bar")
+    "#foo   !bar ".parseTags() returns listOf("#foo", "!bar")
+    "##foo !bar ".parseTags() returns listOf("##foo", "!bar")
+    "#foo bar !baz".parseTags() returns listOf("#foo bar", "!baz")
+    "#foo '#bar !baz".parseTags() returns listOf("#foo '#bar", "!baz")
+    "& #foo !bar".parseTags() returns listOf("&", "#foo", "!bar")
+    "&  #foo !bar".parseTags() returns listOf("&", "#foo", "!bar")
+    "&1 #foo !bar".parseTags() returns listOf("&1", "#foo", "!bar")
+    "#foo & !bar".parseTags() returns listOf("#foo", "&", "!bar")
+    "#foo & bar".parseTags() returns listOf("#foo & bar")
+    "#foo & bar !baz".parseTags() returns listOf("#foo & bar","!baz")
+    "#foo bar !baz &".parseTags() returns listOf("#foo bar", "!baz", "&")
+    "#foo bar !baz & ".parseTags() returns listOf("#foo bar", "!baz", "&")
+    "#foo bar !baz &2".parseTags() returns listOf("#foo bar", "!baz", "&2")
+    "#foo bar !baz :https://wikipedia.org/foo".parseTags() returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
+    "#foo bar :https://wikipedia.org/foo !baz".parseTags() returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
 }
-fun parseTags(input: String): List<String> {
-    var matches = tagStartRegex.findAll(input).toList()
+fun String.parseTags(): List<String> {
+    var matches = tagStartRegex.findAll(this).toList()
     return matches.mapIndexed { i, it ->
-        var stop = if (i < matches.lastIndex) matches[i + 1].range.start - 1 else input.lastIndex
-        input.slice(it.range.start..stop).trim()
+        var stop = if (i < matches.lastIndex) matches[i + 1].range.start - 1 else lastIndex
+        slice(it.range.start..stop).trim()
     }
 }
 val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
 fun def_parseEntry() {
-    parseEntry("XXXXXXXX_XXXX |>") returns Entry("XXXXXXXX_XXXX")
-    parseEntry("XXXXXXXX_XXXX |+") returns Entry("XXXXXXXX_XXXX", rating="+")
-    parseEntry("XXXXXXXX_XXXX |> hello world") returns Entry("XXXXXXXX_XXXX", "hello world")
-    parseEntry("XXXXXXXX_XXXX |> hello world ") returns Entry("XXXXXXXX_XXXX", "hello world")
-    parseEntry("XXXXXXXX_XXXX |> hello world!") returns Entry("XXXXXXXX_XXXX", "hello world!")
-    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar").tags returns listOf("#tag", "!bar")
-    parseEntry("XXXXXXXX_XXXX |> hello world  #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world #tag '!bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world '#tag !bar").summary returns "hello world '#tag"
-    parseEntry("XXXXXXXX_XXXX |> hello world '#tag' !bar").summary returns "hello world '#tag'"
-    parseEntry("XXXXXXXX_XXXX |> hello world &").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world & #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world &1 #tag !bar").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world & '#tag !bar").summary returns "hello world & '#tag"
-    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar &").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello world #tag !bar &1").summary returns "hello world"
-    parseEntry("XXXXXXXX_XXXX |> hello & world").summary returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX |> hello & world #tag !bar").summary returns "hello & world"
-    parseEntry("XXXXXXXX_XXXX |> 🩢🩣🩤 #tag !bar").summary returns "🩢🩣🩤"
+    "XXXXXXXX_XXXX |>".parseEntry() returns Entry("XXXXXXXX_XXXX")
+    "XXXXXXXX_XXXX |+".parseEntry() returns Entry("XXXXXXXX_XXXX", rating="+")
+    "XXXXXXXX_XXXX |> hello world".parseEntry() returns Entry("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX |> hello world ".parseEntry() returns Entry("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX |> hello world!".parseEntry() returns Entry("XXXXXXXX_XXXX", "hello world!")
+    "XXXXXXXX_XXXX |> hello world #tag !bar".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world #tag !bar".parseEntry().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX |> hello world  #tag !bar".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world #tag '!bar".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world '#tag !bar".parseEntry().summary returns "hello world '#tag"
+    "XXXXXXXX_XXXX |> hello world '#tag' !bar".parseEntry().summary returns "hello world '#tag'"
+    "XXXXXXXX_XXXX |> hello world &".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world & #tag !bar".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world &1 #tag !bar".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world & '#tag !bar".parseEntry().summary returns "hello world & '#tag"
+    "XXXXXXXX_XXXX |> hello world #tag !bar &".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world #tag !bar &1".parseEntry().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello & world".parseEntry().summary returns "hello & world"
+    "XXXXXXXX_XXXX |> hello & world #tag !bar".parseEntry().summary returns "hello & world"
+    "XXXXXXXX_XXXX |> 🩢🩣🩤 #tag !bar".parseEntry().summary returns "🩢🩣🩤"
 }
-fun parseEntry(header: String) = parseEntry(header, "")
-fun parseEntry(header: String, body: String): Entry {
-    val tagIndex = tagStartRegex.find(header)?.range?.start ?: header.lastIndex
+fun String.parseEntry() = parseEntry("")
+fun String.parseEntry(body: String): Entry {
+    val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
     return Entry(
-        seq = header.slice(0..12),
-        summary = header.slice(16..tagIndex).trim(),
-        rating = header.slice(15..15).trim(),
-        tags = parseTags(header.drop(tagIndex + 1)),
+        seq = slice(0..12),
+        summary = slice(16..tagIndex).trim(),
+        rating = slice(15..15).trim(),
+        tags = drop(tagIndex + 1).parseTags(),
         body = body)
 }
 
 fun def_parse() {
-    parse("XXXXXXXX_XXXX |> hello world").first().summary returns "hello world"
-    parse("XXXXXXXX_XXXX |> hello world\nbody\n").first().body returns "body"
-    parse("XXXXXXXX_XXXX |> hello world\n\n  body\n").first().body returns "  body"
-    parse("XXXXXXXX_XXXX |> hello world\n\n  body").first().body returns "  body"
-    parse("XXXXXXXX_XXXX |> hello world\nXXXXXXXX_XXXX |> hello world 2").count() returns 2
-    parse("XXXXXXXX_XXXX |> hello world ##tag !bar\n\nbody goes here\n\n").first().body returns "body goes here"
-    parse("XXXXXXXX_XXXX |> hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n").first().body returns "body goes here"
-    parse("XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody goes here\n").first().tags returns listOf("#tag", "!bar")
-    parse("XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody #notag goes here\n").first().tags returns listOf("#tag", "!bar")
-    parse("XXXXXXXX_XXXX |> hello world\n\nbody #notag goes here\n").first().tags.isEmpty() returns true
-    parse("// vim: modeline\nXXXXXXXX_XXXX |> hello world\nbody\n").first().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world".parse().first().summary returns "hello world"
+    "XXXXXXXX_XXXX |> hello world\nbody\n".parse().first().body returns "body"
+    "XXXXXXXX_XXXX |> hello world\n\n  body\n".parse().first().body returns "  body"
+    "XXXXXXXX_XXXX |> hello world\n\n  body".parse().first().body returns "  body"
+    "XXXXXXXX_XXXX |> hello world\nXXXXXXXX_XXXX |> hello world 2".parse().count() returns 2
+    "XXXXXXXX_XXXX |> hello world ##tag !bar\n\nbody goes here\n\n".parse().first().body returns "body goes here"
+    "XXXXXXXX_XXXX |> hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n".parse().first().body returns "body goes here"
+    "XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody goes here\n".parse().first().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody #notag goes here\n".parse().first().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX |> hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
+    "// vim: modeline\nXXXXXXXX_XXXX |> hello world\nbody\n".parse().first().summary returns "hello world"
 }
-fun parse(file: File) = parse(file.reader().buffered())
-fun parse(input: String) = parse(input.reader().buffered())
+fun File.parse() = parse(reader().buffered())
+fun String.parse() = parse(reader().buffered())
 fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry> {
     return generateSequence {
         var header = input.readLine()
@@ -163,7 +163,7 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry>
             body += linefeed + line
         }
         input.reset()
-        if (header != null) parseEntry(header, body.trim('\n')) else null
+        if (header != null) header.parseEntry(body.trim('\n')) else null
     }
 }
 val linefeed = System.getProperty("line.separator")
