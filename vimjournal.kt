@@ -22,6 +22,9 @@ fun main(args: Array<String>) {
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
+        "show-durations" -> parse().withDurations().forEach {
+            println("${it.first.format()} +${it.second}") 
+        }
         "test" -> test()
         else -> println(usage)
     }
@@ -297,13 +300,17 @@ fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequen
                         window.add(next)
                     }
                 } else {
+                    duration = 0
                     try {
                         val consume = current.getSkips() + 1
                         while (consume > window.size) { window.add(i.next()) }
-                        duration = current.getDateTime().until(window[consume - 1].getDateTime(), MINUTES).toInt()
-                    } catch (e: NoSuchElementException) {
-                        duration = 0
-                    }
+                        try {
+                            duration = current.getDateTime().until(
+                                window[consume - 1].getDateTime(), MINUTES).toInt()
+                        } catch (e: DateTimeParseException) {
+                            System.err.println("WARNING: ${e.message}")
+                        }
+                    } catch (e: NoSuchElementException) {}
                 }
                 return@generateSequence Pair(current, duration!!)
             }
