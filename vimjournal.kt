@@ -1,4 +1,4 @@
-//usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && java -cp $CLASSPATH:$0.jar VimjournalKt $@; exit 0
+//usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && java -cp $CLASSPATH:$0.jar VimjournalKt "$@"; exit 0
 
 import java.io.BufferedReader
 import java.io.File
@@ -11,19 +11,28 @@ import java.util.NoSuchElementException
 
 val usage = """
 
-usage: vimjournal.kt [from <seq> | sort-summary | sum-durations <tag>]
+usage: vimjournal.kt [
+  filter-from <seq> 
+  filter-rating <string>
+  filter-summary <string>
+  show-durations 
+  sort-summary 
+  sum-durations <tag> 
+]
 
 """
 
 fun main(args: Array<String>) {
     when (if (args.isNotEmpty()) args[0] else "") {
-        "from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
+        "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
+        "filter-rating" -> parse().filter { it.rating.contains(args[1]) }.forEach { it.print() }
+        "filter-summary" -> parse().filter { it.summary.contains(args[1]) }.forEach { it.print() }
+        "show-durations" -> parse().withDurations().forEach {
+            println("${it.first.format()} +${it.second}") 
+        }
         "sort-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
-        }
-        "show-durations" -> parse().withDurations().forEach {
-            println("${it.first.format()} +${it.second}") 
         }
         "test" -> test()
         else -> println(usage)
