@@ -508,6 +508,19 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
     }
 }
 
+fun def_wrap() {
+    "12345".wrap(1) returns "1\n2\n3\n4\n5\n"
+    "12345".wrap(2) returns "12\n34\n5"
+    "12345".wrap(5) returns "12345\n"
+    "12345".wrap(6) returns "12345"
+}
+fun String.wrap(width: Int): String {
+    return asSequence().foldIndexed(StringBuilder()) { i, acc, ch -> 
+        acc.append(ch)
+        if ((i + 1) % width == 0) acc.append("\n") else acc
+    }.toString()
+}
+
 // kotlin.test not on the default classpath, so use our own test functions
 infix fun Any?.returns(result: Any?) { 
     if (this != result) throw AssertionError("Expected: $result, got $this") 
