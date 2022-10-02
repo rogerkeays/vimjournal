@@ -32,6 +32,7 @@ fun main(args: Array<String>) {
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
+        "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
         "sort-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
@@ -528,7 +529,7 @@ fun Entry.makeFlashcards() {
     Runtime.getRuntime().exec(arrayOf(
         "convert", "-size", "240x320", "xc:black",
         "-font", "FreeMono", "-weight", "bold", "-pointsize", "24",
-        "-fill", "white", "-annotate", "+12+24", tags.joinToString("\n") + "\n\n" + summary.wrap(15),
+        "-fill", "white", "-annotate", "+12+24", (summary + " " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
         "$seq.$flashcardNumber.png"))
 }
