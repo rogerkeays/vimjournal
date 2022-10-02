@@ -512,15 +512,20 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
 }
 
 fun def_wrap() {
-    "12345".wrap(1) returns "1\n2\n3\n4\n5\n"
+    "12345".wrap(1) returns "1\n2\n3\n4\n5"
     "12345".wrap(2) returns "12\n34\n5"
-    "12345".wrap(5) returns "12345\n"
+    "12345".wrap(5) returns "12345"
     "12345".wrap(6) returns "12345"
+    "1\n2345".wrap(2) returns "1\n23\n45"
+    "12\n345".wrap(2) returns "12\n34\n5"
+    "12\n345".wrap(3) returns "12\n345"
 }
 fun String.wrap(width: Int): String {
-    return asSequence().foldIndexed(StringBuilder()) { i, acc, ch -> 
+    var i = 0
+    return asSequence().fold(StringBuilder()) { acc, ch -> 
+        if (i > 0 && i % width == 0 && ch != '\n') acc.append("\n")
+        if (ch == '\n') i = 0 else i++
         acc.append(ch)
-        if ((i + 1) % width == 0) acc.append("\n") else acc
     }.toString()
 }
 
