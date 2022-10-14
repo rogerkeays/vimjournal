@@ -11,15 +11,19 @@ import java.util.NoSuchElementException
 
 val usage = """
 
-usage: vimjournal.kt [
+usage: vimjournal.kt [command] [parameters]
+
+commands:
   filter-from <seq> 
   filter-rating <string>
   filter-summary <string>
   make-flashcards
   show-durations 
+  sort
   sort-summary 
+  sort-tags
   sum-durations <tag> 
-]
+  test
 
 """
 
