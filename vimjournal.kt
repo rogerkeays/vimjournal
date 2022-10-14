@@ -43,6 +43,31 @@ fun main(args: Array<String>) {
     }
 }
 
+// simple test functions, since kotlin.test is not on the default classpath
+fun test(klass: Class<*> = ::test.javaClass.enclosingClass, prefix: String = "def_") {
+    println()
+    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { 
+        print(it.name.drop(prefix.length))
+        print(" ")
+        it(null)
+        println(" ✔")
+    }
+    println("\nAll tests pass\n")
+}
+infix fun Any?.returns(result: Any?) { 
+    if (this != result) throw AssertionError("Expected: $result, got $this") 
+    print(".")
+}
+infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
+    try { 
+        invoke() 
+        throw AssertionError("Exception expected: $ex")
+    } catch (e: Throwable) { 
+        if (!ex.java.isAssignableFrom(e.javaClass)) throw AssertionError("Expected: $ex, got $e")
+    } 
+    print(".")
+}
+
 data class Entry(
     val seq: String,
     val summary: String = "",
@@ -556,29 +581,4 @@ fun Entry.sortTags(): Entry {
     })
 }
 val sortTagsOrder = "/+#=!>@:&"
-
-// kotlin.test not on the default classpath, so use our own test functions
-infix fun Any?.returns(result: Any?) { 
-    if (this != result) throw AssertionError("Expected: $result, got $this") 
-    print(".")
-}
-infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
-    try { 
-        invoke() 
-        throw AssertionError("Exception expected: $ex")
-    } catch (e: Throwable) { 
-        if (!ex.java.isAssignableFrom(e.javaClass)) throw AssertionError("Expected: $ex, got $e")
-    } 
-    print(".")
-}
-fun test(klass: Class<*> = ::test.javaClass.enclosingClass, prefix: String = "def_") {
-    println()
-    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { 
-        print(it.name.drop(prefix.length))
-        print(" ")
-        it(null)
-        println(" ✔")
-    }
-    println("\nAll tests pass\n")
-}
 
