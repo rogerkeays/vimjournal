@@ -49,18 +49,10 @@ fun main(args: Array<String>) {
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, prefix: String = "def_") {
-    println()
-    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { 
-        print(it.name.drop(prefix.length))
-        print(" ")
-        it(null)
-        println(" ✔")
-    }
-    println("\nAll tests pass\n")
+    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { it(null) }
 }
 infix fun Any?.returns(result: Any?) { 
     if (this != result) throw AssertionError("Expected: $result, got $this") 
-    print(".")
 }
 infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
     try { 
@@ -69,7 +61,6 @@ infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) {
     } catch (e: Throwable) { 
         if (!ex.java.isAssignableFrom(e.javaClass)) throw AssertionError("Expected: $ex, got $e")
     } 
-    print(".")
 }
 
 data class Entry(
