@@ -34,6 +34,7 @@ fun main(args: Array<String>) {
         }
         "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
         "sort-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
+        "sort-tags" -> parse().forEach { it.sortTags().print() }
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
@@ -539,6 +540,22 @@ fun Entry.makeFlashcards() {
         "$seq.$flashcardNumber.png"))
 }
 var flashcardNumber = 0
+
+fun def_sortTags() {
+    Entry("XXXXXXXX_XXXX").sortTags() returns Entry("XXXXXXXX_XXXX")
+    Entry("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns 
+        Entry("XXXXXXXX_XXXX", tags=listOf("@7"))
+    Entry("XXXXXXXX_XXXX", tags=listOf("@7", "/1")).sortTags() returns 
+        Entry("XXXXXXXX_XXXX", tags=listOf("/1", "@7"))
+    Entry("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns 
+        Entry("XXXXXXXX_XXXX", tags=listOf("@2", "@1"))
+}
+fun Entry.sortTags(): Entry {
+    return this.copy(tags = tags.sortedWith { a, b -> 
+        sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
+    })
+}
+val sortTagsOrder = "/+#=!>@:&"
 
 // kotlin.test not on the default classpath, so use our own test functions
 infix fun Any?.returns(result: Any?) { 
