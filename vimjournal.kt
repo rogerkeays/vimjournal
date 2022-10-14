@@ -555,7 +555,7 @@ fun Entry.makeFlashcards() {
     Runtime.getRuntime().exec(arrayOf(
         "convert", "-size", "240x320", "xc:black",
         "-font", "FreeMono", "-weight", "bold", "-pointsize", "24",
-        "-fill", "white", "-annotate", "+12+24", (summary + " " + tags.joinToString(" ")).wrap(15),
+        "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
         "$seq.$flashcardNumber.png"))
 }
