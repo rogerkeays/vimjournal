@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ ! $1 ]; then
+  echo "usage: `basename $0` file"
+  exit 1
+fi
+
+INPUT=$1
+OUTPUT=$1.sorted
+DELIMETER=␁
+
+perl -p -e "s/\n/$DELIMETER/" $INPUT > $OUTPUT
+sed -i -e"s/$DELIMETER\([0-9][0-9][0-9][0-9][0-9x][0-9x][0-9x][0-9x] [0-9\?][0-9\?][0-9\?][0-9\?][^│$DELIMETER]*│\)/\n\1/g" $OUTPUT
+vim -c"sort /^........ ..../ r|wq" $OUTPUT
+sed -i -e"s/$DELIMETER/\n/g" $OUTPUT
+
