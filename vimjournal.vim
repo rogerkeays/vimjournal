@@ -44,7 +44,7 @@ autocmd FileType vimjournal setl iskeyword-=_                    " word navigati
 function JumpEnd()
   if !exists("b:vimjournal_jumped")
     let b:vimjournal_jumped = 1
-    normal G
+    normal Gzm
   endif
 endfunction
 autocmd FileType vimjournal call JumpEnd()
