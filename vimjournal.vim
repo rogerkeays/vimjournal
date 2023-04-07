@@ -87,3 +87,29 @@ autocmd BufRead *.log hi Heading ctermfg=white
 autocmd BufRead *.log hi Comment ctermfg=lightgreen
 autocmd BufRead *.log hi Reference ctermfg=lightyellow
 
+"
+" functions to find anacronisms
+"
+" forward search is mapped to <C-n>
+" reverse search is mapped to <C-h>
+"
+function FindNextAnac()
+  while line(".") != line("$")
+    if getline(".")[0:12] > getline(line(".") + 1)[0:12]
+      break
+    endif
+    normal j
+  endwhile
+endfunction
+autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
+
+function FindLastAnac()
+  while line(".") != 1
+    if getline(".")[0:12] < getline(line(".") - 1)[0:12]
+      break
+    endif
+    normal k
+  endwhile
+endfunction
+autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
+
