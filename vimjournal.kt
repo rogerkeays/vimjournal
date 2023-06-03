@@ -20,7 +20,8 @@ commands:
   make-flashcards
   show-durations 
   sort
-  sort-summary 
+  sort-by-summary 
+  sort-by-rating
   sort-tags
   sum-durations <tag> 
   test
@@ -37,7 +38,8 @@ fun main(args: Array<String>) {
             println("${it.first.format()} +${it.second}") 
         }
         "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
-        "sort-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
+        "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
+        "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
         "sort-tags" -> parse().forEach { it.sortTags().print() }
         "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
@@ -68,8 +70,17 @@ data class Entry(
     val summary: String = "",
     val rating: String = ">",
     val tags: List<String> = listOf(),
-    val body: String = "",
-)
+    val body: String = "") {
+    val priority = when (rating) {
+        "*" -> 1
+        "+" -> 2
+        "=" -> 3
+        "~" -> 3
+        "-" -> 4
+        "x" -> 5
+        else -> 3
+    }
+}
 
 fun def_format() {
     Entry("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX |>"
