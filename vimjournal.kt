@@ -568,7 +568,7 @@ fun Entry.makeFlashcards() {
         "-font", "FreeMono", "-weight", "bold", "-pointsize", "24",
         "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
-        "111112222233333.%04d.png".format(flashcardNumber)))
+        "%04d.FROGS.png".format(flashcardNumber)))
 }
 var flashcardNumber = 0
 
