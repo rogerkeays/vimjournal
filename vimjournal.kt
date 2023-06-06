@@ -31,8 +31,8 @@ commands:
 fun main(args: Array<String>) {
     when (if (args.isNotEmpty()) args[0] else "") {
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
-        "filter-rating" -> parse().filter { it.rating.contains(args[1]) }.forEach { it.print() }
-        "filter-summary" -> parse().filter { it.summary.contains(args[1]) }.forEach { it.print() }
+        "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
+        "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
         "make-flashcards" -> parse().forEach { it.makeFlashcards() }
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
