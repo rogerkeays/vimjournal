@@ -66,7 +66,7 @@ data class Entry(
     }
 }
 
-fun def_format() {
+fun format_spec() {
     Entry("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX |>"
     Entry("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX |> hello world"
     Entry("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX |+ hello world"
@@ -84,7 +84,7 @@ fun Entry.format() = buildString {
 }
 fun Entry.print() = println(format())
 
-fun def_isHeader() {
+fun isHeader_spec() {
     "00000000_0000 |>".isHeader() returns true
     "0000XXXX_XXXX |>".isHeader() returns true
     "0000XXXX_YYYY |>".isHeader() returns true
@@ -104,7 +104,7 @@ fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = "->x=~+*"
 val headerRegex = Regex("^[0-9A-Z_]{13} \\|[$markerChars].*\n?$")
 
-fun def_parseTags() {
+fun parseTags_spec() {
     "".parseTags().isEmpty() returns true
     "#foo".parseTags() returns listOf("#foo")
     "nontag #foo".parseTags() returns listOf("#foo")
@@ -137,7 +137,7 @@ fun String.parseTags(): List<String> {
 val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
-fun def_parseEntry() {
+fun parseEntry_spec() {
     "XXXXXXXX_XXXX |>".parseEntry() returns Entry("XXXXXXXX_XXXX")
     "XXXXXXXX_XXXX |+".parseEntry() returns Entry("XXXXXXXX_XXXX", rating="+")
     "XXXXXXXX_XXXX |> hello world".parseEntry() returns Entry("XXXXXXXX_XXXX", "hello world")
@@ -170,7 +170,7 @@ fun String.parseEntry(body: String): Entry {
         body = body)
 }
 
-fun def_parse() {
+fun parse_spec() {
     "XXXXXXXX_XXXX |> hello world".parse().first().summary returns "hello world"
     "XXXXXXXX_XXXX |> hello world\nbody\n".parse().first().body returns "body"
     "XXXXXXXX_XXXX |> hello world\n\n  body\n".parse().first().body returns "  body"
@@ -205,7 +205,7 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Entry>
 }
 val linefeed = System.getProperty("line.separator")
 
-fun def_isExact() {
+fun isExact_spec() {
     Entry("20000101_0000").isExact() returns true
     Entry("20000101_XXXX").isExact() returns false
     Entry("XXXXXXXX_XXXX").isExact() returns false
@@ -213,7 +213,7 @@ fun def_isExact() {
 fun Entry.isExact() = seq.matches(exactDateTimeRegex)
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
-fun def_getDateTime() {
+fun getDateTime_spec() {
     Entry("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
     { Entry("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
     { Entry("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
@@ -221,7 +221,7 @@ fun def_getDateTime() {
 fun Entry.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
-fun def_getTaggedDuration() {
+fun getTaggedDuration_spec() {
     Entry("XXXXXXXX_XXXX").getTaggedDuration() returns null
     Entry("XXXXXXXX_XXXX", tags=listOf("+0")).getTaggedDuration() returns 0
     Entry("XXXXXXXX_XXXX", tags=listOf("+word")).getTaggedDuration() returns null
@@ -239,7 +239,7 @@ fun Entry.getTaggedDuration(): Int? {
 }
 val durationRegex = Regex("(\\+[0-9]+|/.*!)")
 
-fun def_getSkips() {
+fun getSkips_spec() {
     Entry("XXXXXXXX_XXXX").getSkips() returns 0
     Entry("XXXXXXXX_XXXX", tags=listOf("&")).getSkips() returns 1
     Entry("XXXXXXXX_XXXX", tags=listOf("&", "#foo")).getSkips() returns 1
@@ -257,7 +257,7 @@ fun Entry.getSkips(): Int {
 }
 val skipsRegex = Regex("&[0-9]*")
 
-fun def_pairs() {
+fun pairs_spec() {
     sequenceOf<Int>().pairs().toList() returns listOf<Int>()
     sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
     sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
@@ -278,7 +278,7 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
 }
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-fun def_withDurations() {
+fun withDurations_spec() {
     sequenceOf<Entry>().withDurations().count() returns 0
     sequenceOf(
          Entry("20000101_0000"))
@@ -347,7 +347,7 @@ fun Sequence<Entry>.withDurations(filter: (Entry) -> Boolean = { true }): Sequen
     }
 }
 
-fun def_sumDurations() {
+fun sumDurations_spec() {
     sequenceOf<Entry>().sumDurations() returns 0
     sequenceOf(
          Entry("20000101_0000"))
@@ -386,7 +386,7 @@ fun Sequence<Entry>.sumDurationsFor(tag: String) = sumDurations { entry ->
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun def_sumDurationsByTag() {
+fun sumDurationsByTag_spec() {
     sequenceOf<Entry>().sumDurationsByTag() returns mapOf<String, Int>()
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1")))
@@ -451,7 +451,7 @@ fun Sequence<Entry>.sumDurationsByTag(filter: (Entry) -> Boolean = { true }): Ma
 }
 val excludeTagRegex = Regex("^\\+[0-9]+")
 
-fun def_sumDurationsByTagFor() {
+fun sumDurationsByTagFor_spec() {
     sequenceOf(
          Entry("20000101_0000", tags=listOf("=p1")))
         .sumDurationsByTagFor("=p1")["=p1"] returns 0
@@ -492,7 +492,7 @@ fun Sequence<Entry>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { entr
     entry.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun def_stripDurationTags() {
+fun stripDurationTags_spec() {
     sequenceOf(
          Entry("20000101_0030", tags=listOf("+10")),
          Entry("20000101_0040"))
@@ -527,7 +527,7 @@ fun Sequence<Entry>.stripDurationTags(): Sequence<Entry> = pairs().map { (first,
     }
 }
 
-fun def_wrap() {
+fun wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
     "12345".wrap(2) returns "12\n34\n5"
     "12345".wrap(5) returns "12345"
@@ -556,7 +556,7 @@ fun Entry.makeFlashcards() {
 }
 var flashcardNumber = 0
 
-fun def_sortTags() {
+fun sortTags_spec() {
     Entry("XXXXXXXX_XXXX").sortTags() returns Entry("XXXXXXXX_XXXX")
     Entry("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns 
         Entry("XXXXXXXX_XXXX", tags=listOf("@7"))
@@ -573,8 +573,8 @@ fun Entry.sortTags(): Entry {
 val sortTagsOrder = "/+#=!>@:&"
 
 // simple test functions, since kotlin.test is not on the default classpath
-fun test(klass: Class<*> = ::test.javaClass.enclosingClass, prefix: String = "def_") {
-    klass.declaredMethods.filter { it.name.startsWith(prefix) }.forEach { it(null) }
+fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
+    klass.declaredMethods.filter { it.name.endsWith(suffix) }.forEach { it(null) }
 }
 infix fun Any?.returns(result: Any?) { 
     if (this != result) throw AssertionError("Expected: $result, got $this") 
