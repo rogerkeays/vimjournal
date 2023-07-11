@@ -4,6 +4,8 @@ import java.io.File
 
 val seen = HashSet<String>()
 
+// usage: catuniq searchfiles - seenfiles
+// show all the lines in searchfiles which are not in seenfiles
 fun main(args: Array<String>) {
     args.takeLastWhile { it != "-" }.forEach { File(it).forEachLine { seen.add(hash(it)) } } 
     args.takeWhile { it != "-" }.forEach { catuniq(it) }
