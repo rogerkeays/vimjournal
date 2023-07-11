@@ -66,7 +66,7 @@ data class Record(
     }
 }
 
-fun format_spec() {
+fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX |>"
     Record("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX |> hello world"
     Record("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX |+ hello world"
@@ -84,7 +84,7 @@ fun Record.format() = buildString {
 }
 fun Record.print() = println(format())
 
-fun isHeader_spec() {
+fun String_isHeader_spec() {
     "00000000_0000 |>".isHeader() returns true
     "0000XXXX_XXXX |>".isHeader() returns true
     "0000XXXX_YYYY |>".isHeader() returns true
@@ -104,7 +104,7 @@ fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = "->x=~+*"
 val headerRegex = Regex("^[0-9A-Z_]{13} \\|[$markerChars].*\n?$")
 
-fun parseTags_spec() {
+fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
     "#foo".parseTags() returns listOf("#foo")
     "nontag #foo".parseTags() returns listOf("#foo")
@@ -137,7 +137,7 @@ fun String.parseTags(): List<String> {
 val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
-fun parseRecord_spec() {
+fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX |>".parseRecord() returns Record("XXXXXXXX_XXXX")
     "XXXXXXXX_XXXX |+".parseRecord() returns Record("XXXXXXXX_XXXX", rating="+")
     "XXXXXXXX_XXXX |> hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
@@ -170,7 +170,7 @@ fun String.parseRecord(body: String): Record {
         body = body)
 }
 
-fun parse_spec() {
+fun String_parse_spec() {
     "XXXXXXXX_XXXX |> hello world".parse().first().summary returns "hello world"
     "XXXXXXXX_XXXX |> hello world\nbody\n".parse().first().body returns "body"
     "XXXXXXXX_XXXX |> hello world\n\n  body\n".parse().first().body returns "  body"
@@ -205,7 +205,7 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Record
 }
 val linefeed = System.getProperty("line.separator")
 
-fun isExact_spec() {
+fun Record_isExact_spec() {
     Record("20000101_0000").isExact() returns true
     Record("20000101_XXXX").isExact() returns false
     Record("XXXXXXXX_XXXX").isExact() returns false
@@ -213,7 +213,7 @@ fun isExact_spec() {
 fun Record.isExact() = seq.matches(exactDateTimeRegex)
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
-fun getDateTime_spec() {
+fun Record_getDateTime_spec() {
     Record("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
     { Record("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
     { Record("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
@@ -221,7 +221,7 @@ fun getDateTime_spec() {
 fun Record.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
-fun getTaggedDuration_spec() {
+fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
     Record("XXXXXXXX_XXXX", tags=listOf("+0")).getTaggedDuration() returns 0
     Record("XXXXXXXX_XXXX", tags=listOf("+word")).getTaggedDuration() returns null
@@ -239,7 +239,7 @@ fun Record.getTaggedDuration(): Int? {
 }
 val durationRegex = Regex("(\\+[0-9]+|/.*!)")
 
-fun getSkips_spec() {
+fun Record_getSkips_spec() {
     Record("XXXXXXXX_XXXX").getSkips() returns 0
     Record("XXXXXXXX_XXXX", tags=listOf("&")).getSkips() returns 1
     Record("XXXXXXXX_XXXX", tags=listOf("&", "#foo")).getSkips() returns 1
@@ -257,7 +257,7 @@ fun Record.getSkips(): Int {
 }
 val skipsRegex = Regex("&[0-9]*")
 
-fun pairs_spec() {
+fun Sequence_pairs_spec() {
     sequenceOf<Int>().pairs().toList() returns listOf<Int>()
     sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
     sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
@@ -278,7 +278,7 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
 }
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-fun withDurations_spec() {
+fun Sequence_withDurations_spec() {
     sequenceOf<Record>().withDurations().count() returns 0
     sequenceOf(
          Record("20000101_0000"))
@@ -347,7 +347,7 @@ fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequ
     }
 }
 
-fun sumDurations_spec() {
+fun Sequence_sumDurations_spec() {
     sequenceOf<Record>().sumDurations() returns 0
     sequenceOf(
          Record("20000101_0000"))
@@ -386,7 +386,7 @@ fun Sequence<Record>.sumDurationsFor(tag: String) = sumDurations { record ->
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun sumDurationsByTag_spec() {
+fun Sequence_sumDurationsByTag_spec() {
     sequenceOf<Record>().sumDurationsByTag() returns mapOf<String, Int>()
     sequenceOf(
          Record("20000101_0000", tags=listOf("=p1")))
@@ -451,7 +451,7 @@ fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): 
 }
 val excludeTagRegex = Regex("^\\+[0-9]+")
 
-fun sumDurationsByTagFor_spec() {
+fun Sequence_sumDurationsByTagFor_spec() {
     sequenceOf(
          Record("20000101_0000", tags=listOf("=p1")))
         .sumDurationsByTagFor("=p1")["=p1"] returns 0
@@ -492,7 +492,7 @@ fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { rec
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun stripDurationTags_spec() {
+fun Sequence_stripDurationTags_spec() {
     sequenceOf(
          Record("20000101_0030", tags=listOf("+10")),
          Record("20000101_0040"))
@@ -527,7 +527,7 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
     }
 }
 
-fun wrap_spec() {
+fun String_wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
     "12345".wrap(2) returns "12\n34\n5"
     "12345".wrap(5) returns "12345"
@@ -556,7 +556,7 @@ fun Record.makeFlashcards() {
 }
 var flashcardNumber = 0
 
-fun sortTags_spec() {
+fun Record_sortTags_spec() {
     Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
     Record("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns 
         Record("XXXXXXXX_XXXX", tags=listOf("@7"))
