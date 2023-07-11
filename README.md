@@ -1,8 +1,8 @@
 # Vimjournal
 
-*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although Vimjournal does not depend on VIM, it does provide syntax highlighting and support to make editing *Vimjournal* logs easier.
+*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although *vimjournal* does not depend on [VIM](https://www.vim.org), it does provide syntax highlighting and support to make editing *vimjournal* logs easier.
 
-A *Vimjournal* log is an append-only text file normally ending in `.log`. There are generally two types: compact and detailed. Compact logs contain one record per line. For example, here is a time log:
+A *vimjournal* log is an append-only text file normally ending in `.log`. There are generally two types: compact and detailed. Compact logs contain one record per line. For example, here is a time log:
 
     20200709_1423 |= remove use of unsafe reflection: --add-opens is better /code =jamaica @lao-home:thakhek
     20200709_1555 |- debug jshell compatibility problems: broken state /debug =jamaica @lao-home:thakhek
@@ -173,9 +173,9 @@ All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:aus
 
 ## Usage in VIM
 
-Add [Vimjournal.vim](https://raw.githubusercontent.com/rogerkeays/vimjournal/main/vimjournal.vim) to your `$HOME/.vim/ftdetect` directory. You can also symlink it to your github clone of this project if you chose.
+Add [vimjournal.vim](https://raw.githubusercontent.com/rogerkeays/vimjournal/main/vimjournal.vim) to your `$HOME/.vim/ftdetect` directory. You can also symlink it to your github clone of this project if you chose.
 
-In addition to syntax highlighting, *Vimjournal* adds up the following shortcut keys:
+In addition to syntax highlighting, *vimjournal* adds up the following shortcut keys:
 
     <C-t> append a record
     <TAB> open and close a detailed record
@@ -192,7 +192,7 @@ If you are editing a very large compact log, the following modeline will disable
 
 ## Command Line Tools
 
-The `vimjournal.kt` Kotlin script contains some utilities for handling *Vimjournal* log files. It reads from stdin and writes to stdout. The basic usage is:
+The `vimjournal.kt` Kotlin script contains some utilities for handling *vimjournal* log files. It reads from stdin and writes to stdout. The basic usage is:
 
     cat input.log | vimjournal.kt [command] > output.log
 
@@ -211,14 +211,14 @@ The commands are:
 
 See [the source code](https://github.com/rogerkeays/vimjournal/blob/main/vimjournal.kt) for exact operation.
 
-Being plain text means you don't need too many special tools to work with *Vimjournal* log files. `grep` on its own is going to give you a lot of mileage. Two particularly useful functions you might want to add to your shell are:
+Being plain text means you don't need too many special tools to work with *vimjournal* log files. `grep` on its own is going to give you a lot of mileage. Two particularly useful functions you might want to add to your shell are:
 
     j() { grep -i "|.*$*" $JOURNAL/*.log | less; } # search journal headers
     jj() { grep -i "$*" $JOURNAL/*.log | less; }   # search journal headers and content
 
 ## Organising Your Logs
 
-The real power of *Vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information by date, but it is still possible to end up with a big ball of mud using *Vimjournal* if you mix different types of data in one log. It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. Organise by type and use tags to cross-reference logs.
+The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information by date, but it is still possible to end up with a big ball of mud using *vimjournal* if you mix different types of data in one log. It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. Organise by type and use tags to cross-reference logs.
 
 *Vimjournal* is useful for recorded all sorts of types of data. For example: time logs, expenses, programming snippets, quotes, dreams, contact information, ideas, links, recipes, reading notes, questions, and observations, and just about anything else you can imagine.
 
@@ -229,7 +229,8 @@ The real power of *Vimjournal* comes from organising your information in a way t
 
 ## Related Resources
 
-  * [Vimcash](https://github.com/rogerkeays/vimcash): an accounting system based on *Vimjournal*.
+  * [Vimcash](https://github.com/rogerkeays/vimcash): an accounting system based on *vimjournal*.
   * [Vimliner](https://github.com/rogerkeays/vimliner): the simplest outliner for VIM.
+  * [VIM](https://www.vim.org): the text editor that refused to die.
   * [More stuff you never knew you wanted](https://rogerkeays.com).
 
