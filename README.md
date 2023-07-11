@@ -1,6 +1,6 @@
 # Vimjournal
 
-*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although you can use any text editor with *vimjournal*, it does provide syntax highlighting and shortcut keys for [VIM](https://www.vim.org) to make editing logs easier.
+*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although you can use any text editor with *vimjournal*, it provides syntax highlighting and shortcut keys for [VIM](https://www.vim.org) to make editing logs easier.
 
 A *vimjournal* log is an append-only text file normally ending in `.log`. There are two types: compact and expanded. Compact logs contain one record per line. For example, a time log:
 
@@ -184,7 +184,7 @@ Being plain text means you don't need too many special tools to work with *vimjo
 
 The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information chronologically, but it is still possible to end up with a big ball of mud if you mix different types of data in your logs.
 
-It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. If your kitchen is well organised (by type), you can make any recipe known to man. Organise by type and use tags to cross-reference logs.
+It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. If your kitchen is well organised, you can make any recipe known to man. Organise by type and use tags to cross-reference logs.
 
 *Vimjournal* is useful for recording many different types of data:
 
