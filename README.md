@@ -1,8 +1,8 @@
 # Vimjournal
 
-*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although *vimjournal* does not depend on [VIM](https://www.vim.org), it does provide syntax highlighting and support to make editing *vimjournal* logs easier.
+*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although *vimjournal* does not depend on [VIM](https://www.vim.org), it does provide syntax highlighting and support to make editing logs easier.
 
-A *vimjournal* log is an append-only text file normally ending in `.log`. There are generally two types: compact and detailed. Compact logs contain one record per line. For example, here is a time log:
+A *vimjournal* log is an append-only text file normally ending in `.log`. There are generally two types: compact and expanded. Compact logs contain one record per line. For example, here is a time log:
 
     20200709_1423 |= remove use of unsafe reflection: --add-opens is better /code =jamaica @lao-home:thakhek
     20200709_1555 |- debug jshell compatibility problems: broken state /debug =jamaica @lao-home:thakhek
@@ -29,41 +29,7 @@ Or quotes:
     20200329_1738 |+ never give up and good luck will find you --falkor, the never-ending story #motivation
     20200423_1035 |= i'll pick the lock but will not turn the key --bad religion #psychology
 
-Detailed logs allow you to add any unstructured text after the record header. For example, an issue log:
-
-    20200706_1054 |= ✔ unchecked throws warnings when catching checked exceptions /java =jamaica
-
-    ==PROBLEM
-
-    javac shows warnings when catching checked exceptions
-
-        Test.java:18: warning: unreachable catch clause
-            } catch (UnsupportedEncodingException e) {} // okay, never thrown
-              ^
-        thrown types  have already been caught
-
-    ==PROPOSALS
-
-      - this warning only appears for checked exceptions
-      - in github JDK, the source is Flow.FlowAnalyzer.checkCaughtType() (line 1693)
-      - this doesn't exist in older compilers, it is just Flow.checkCaughtType()
-      - subclassing the nested class is likely to get nasty
-      ...
-
-    20200708_2023 |= ✔ hibernate build cannot find unchecked plugin /java =jamaica
-
-    ==PROBLEM
-
-    hibernate build fails with "error: plug-in not found: unchecked"
-
-    ==SYNOPSIS
-
-    adding the jar to the classpath has no effect
-    error caused by -processorpath parameters passed by hibernate to javac
-    see hibernate-core/target/tmp/compileJava/java-compiler-args.txt
-    ...
-
-Or programming snippets:
+Expanded logs allow you to add any unstructured text after the record header. For example, an snippets log:
 
     20200603_1337 |- create a virtual property in kotlin /kotlin >sorting by rating =vimjournal @lobby
 
@@ -73,11 +39,6 @@ Or programming snippets:
             get() { 1 }
     }
 
-    // better to use a plain value
-    class X {
-        val priority = 1
-    }
-
     20200605_1740 |= calculate a modulus in bash /bash >sorting flashcards @lobby
 
     i=21
@@ -85,8 +46,6 @@ Or programming snippets:
 
     20200617_0852 |= run monkey island in dosbox /dos @lobby
 
-    // sound doesn't work, requires separate cd
-    // https://www.vogons.org/viewtopic.php?t=17826
     cd /home/library/games/dos/monkey-island-1
     dosbox
     mount -t cdrom c .
@@ -105,7 +64,7 @@ Or programming snippets:
          System.out.println("\tat " + s.getClassName() + "." + s.getMethodName() + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
     }
 
-Or how about a vocabulary log:
+Or perhaps about a vocabulary log:
 
     20200329_0933 |= fr: an opinion >pimsleur 3.17 @bukit-china
 
@@ -148,13 +107,16 @@ Or how about a vocabulary log:
     your chess sponsorship agreement with openmarkets will be novated to fnz
     custodians (australia) pty ltd
 
-In VIM you will use <TAB> to open and close detailed records, making it easy to scan large amounts of information.
+In VIM you use TAB to open and close expanded records, making it easier to scan large amounts of information.
+
+## Log Format
 
 The basic format of the records are:
 
     YYYYMMDD_HHMM |[rating] [title] [tags]
+    [content]
 
-Rating is one of `* + = - x` in order of highest to lowest. Tags begin with a special character and have the following intended uses:
+The start of a new record indicates the end of the last one. `Rating` is one of `* + = - x` from highest to lowest. `Tags` begin with a special character and have the following intended usage:
 
     prefix   scope   usage
     ------------------------------------------------------
@@ -167,18 +129,20 @@ Rating is one of `* + = - x` in order of highest to lowest. Tags begin with a sp
     >        record  context
     @        record  place
     :        record  data, url
-    &n       record  skips, used to indicate a log entry overlaps the n following ones
+    &n       record  skips (used to indicate a record's duration overlaps the `n` following records)
 
-All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:melbourne`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. The reverse-hierarchy is used so we use code-completion instead of writing them out in full. Nobody wants to do that.
+All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:melbourne`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. The reverse-hierarchy is used so we use code-completion instead of writing them out in full.
 
 ## Usage in VIM
 
-Add [vimjournal.vim](https://raw.githubusercontent.com/rogerkeays/vimjournal/main/vimjournal.vim) to your `$HOME/.vim/ftdetect` directory. You can also symlink it to your github clone of this project if you chose.
+Add [vimjournal.vim](https://raw.githubusercontent.com/rogerkeays/vimjournal/main/vimjournal.vim) to your `$HOME/.vim/ftdetect` directory and edit a file ending in `.log`.
 
-In addition to syntax highlighting, *vimjournal* adds up the following shortcut keys:
+In addition to syntax highlighting, *vimjournal* sets up the following shortcut keys:
 
-    <C-t> append a record
-    <TAB> open and close a detailed record
+    <C-t> append a new record at the end of the file
+    <TAB> open and close an expanded record
+    <TAB> code completion in insert mode: backwards search (especially useful for tags)
+    <S-TAB> code completion in insert mode: forward search (especially useful for tags)
     <C-l> browse the journal's directory
     <C-o> open a new record below the current one (compact logs only)
     <C-x> insert a ✘ in insert mode
@@ -186,7 +150,7 @@ In addition to syntax highlighting, *vimjournal* adds up the following shortcut 
     <C-h> search backwards for non-sequential records (compact logs only)
     <C-n> search forwards for non-sequential records (compact logs only)
 
-If you are editing a very large compact log, the following modeline will disable the code folding only necessary for detailed logs, making loading much faster:
+If you are editing a very large compact log, the following modeline will disable the code folding which is only necessary for expanded logs. This will make loading much faster:
 
     // vim: foldmethod=manual nofoldenable nowrap
 
@@ -211,20 +175,38 @@ The commands are:
 
 See [the source code](https://github.com/rogerkeays/vimjournal/blob/main/vimjournal.kt) for exact operation.
 
-Being plain text means you don't need too many special tools to work with *vimjournal* log files. `grep` on its own is going to give you a lot of mileage. Two particularly useful functions you might want to add to your shell are:
+Being plain text means you don't need too many special tools to work with *vimjournal* log files. `grep` on its own will give you a lot of mileage. Two particularly useful functions you could add to your shell are:
 
     j() { grep -i "|.*$*" $JOURNAL/*.log | less; } # search journal headers
     jj() { grep -i "$*" $JOURNAL/*.log | less; }   # search journal headers and content
 
 ## Organising Your Logs
 
-The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information by date, but it is still possible to end up with a big ball of mud using *vimjournal* if you mix different types of data in one log. It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. Organise by type and use tags to cross-reference logs.
+The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information by date, but it is still possible to end up with a big ball of mud if you mix different types of data in your logs.
 
-*Vimjournal* is useful for recorded all sorts of types of data. For example: time logs, expenses, programming snippets, quotes, dreams, contact information, ideas, links, recipes, reading notes, questions, and observations, and just about anything else you can imagine.
+It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. Organise by type and use tags to cross-reference logs.
+
+*Vimjournal* is useful for recorded all sorts of types of data:
+
+  * time logs
+  * expenses
+  * contacts
+  * code snippets
+  * bugs
+  * ideas
+  * links
+  * blogs
+  * quotes
+  * reading notes
+  * questions
+  * observations
+  * experiences
+  * dreams
+  * just about anything else you can imagine
 
 ## Known Issues
 
-  * Syntax highlight doesn't work when the records are folded.
+  * Syntax highlight doesn't work when the expandable records are folded.
   * Compact logs need to use a modeline to turn off code folding. This saves creating a new file type.
 
 ## Related Resources
@@ -232,5 +214,6 @@ The real power of *vimjournal* comes from organising your information in a way t
   * [Vimcash](https://github.com/rogerkeays/vimcash): an accounting system based on *vimjournal*.
   * [Vimliner](https://github.com/rogerkeays/vimliner): the simplest outliner for VIM.
   * [VIM](https://www.vim.org): the text editor that refused to die.
+  * [Kotlin](https://kotlinlang.org): JVM language you will need to install to run *vimjournal.kt*.
   * [More stuff you never knew you wanted](https://rogerkeays.com).
 
