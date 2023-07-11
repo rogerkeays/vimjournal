@@ -1,8 +1,8 @@
 # Vimjournal
 
-*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although *vimjournal* does not depend on [VIM](https://www.vim.org), it does provide syntax highlighting and support to make editing logs easier.
+*Vimjournal* is a simple text format and utilities for organising large amounts of information. Although you can use any text editor with *vimjournal*, it does provide syntax highlighting and shortcut keys for [VIM](https://www.vim.org) to make editing logs easier.
 
-A *vimjournal* log is an append-only text file normally ending in `.log`. There are generally two types: compact and expanded. Compact logs contain one record per line. For example, here is a time log:
+A *vimjournal* log is an append-only text file normally ending in `.log`. There are two types: compact and expanded. Compact logs contain one record per line. For example, a time log:
 
     20200709_1423 |= remove use of unsafe reflection: --add-opens is better /code =jamaica @lao-home:thakhek
     20200709_1555 |- debug jshell compatibility problems: broken state /debug =jamaica @lao-home:thakhek
@@ -29,7 +29,7 @@ Or quotes:
     20200329_1738 |+ never give up and good luck will find you --falkor, the never-ending story #motivation
     20200423_1035 |= i'll pick the lock but will not turn the key --bad religion #psychology
 
-Expanded logs allow you to add any unstructured text after the record header. For example, an snippets log:
+Expanded logs have unstructured text after the record header. For example, a code snippets log:
 
     20200603_1337 |- create a virtual property in kotlin /kotlin >sorting by rating =vimjournal @lobby
 
@@ -64,7 +64,7 @@ Expanded logs allow you to add any unstructured text after the record header. Fo
          System.out.println("\tat " + s.getClassName() + "." + s.getMethodName() + "(" + s.getFileName() + ":" + s.getLineNumber() + ")");
     }
 
-Or perhaps about a vocabulary log:
+Or perhaps a vocabulary log:
 
     20200329_0933 |= fr: an opinion >pimsleur 3.17 @bukit-china
 
@@ -131,7 +131,7 @@ The start of a new record indicates the end of the last one. `Rating` is one of 
     :        record  data, url
     &n       record  skips (used to indicate a record's duration overlaps the `n` following records)
 
-All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:melbourne`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. The reverse-hierarchy is used so we use code-completion instead of writing them out in full.
+All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:melbourne`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. A reverse-hierarchy is used so we use code-completion instead of writing them out in full.
 
 ## Usage in VIM
 
@@ -141,14 +141,14 @@ In addition to syntax highlighting, *vimjournal* sets up the following shortcut 
 
     <C-t> append a new record at the end of the file
     <TAB> open and close an expanded record
-    <TAB> code completion in insert mode: backwards search (especially useful for tags)
-    <S-TAB> code completion in insert mode: forward search (especially useful for tags)
-    <C-l> browse the journal's directory
+    <TAB> tag completion in insert mode: cycle backwards
+    <S-TAB> tag completion in insert mode: cycle forwards
+    <C-l> browse the journal directory
     <C-o> open a new record below the current one (compact logs only)
-    <C-x> insert a ✘ in insert mode
-    <C-z> insert a ✔ in insert mode
     <C-h> search backwards for non-sequential records (compact logs only)
     <C-n> search forwards for non-sequential records (compact logs only)
+    <C-x> insert a ✘ in insert mode
+    <C-z> insert a ✔ in insert mode
 
 If you are editing a very large compact log, the following modeline will disable the code folding which is only necessary for expanded logs. This will make loading much faster:
 
@@ -171,9 +171,9 @@ The commands are:
     sort-by-summary
     sort-by-rating
     sort-tags
-    sum-durations <tag> (calculate the time spent on entries matching the given tag)
+    sum-durations <tag> (calculate the time spent on records matching the given tag)
 
-See [the source code](https://github.com/rogerkeays/vimjournal/blob/main/vimjournal.kt) for exact operation.
+See [the source code](https://github.com/rogerkeays/vimjournal/blob/main/vimjournal.kt) for exact operation. Note that running the script for the first time will be slow, as the code needs to be compiled.
 
 Being plain text means you don't need too many special tools to work with *vimjournal* log files. `grep` on its own will give you a lot of mileage. Two particularly useful functions you could add to your shell are:
 
@@ -182,11 +182,11 @@ Being plain text means you don't need too many special tools to work with *vimjo
 
 ## Organising Your Logs
 
-The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information by date, but it is still possible to end up with a big ball of mud if you mix different types of data in your logs.
+The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information chronologically, but it is still possible to end up with a big ball of mud if you mix different types of data in your logs.
 
-It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. Organise by type and use tags to cross-reference logs.
+It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. If your kitchen is well organised (by type), you can make any recipe known to man. Organise by type and use tags to cross-reference logs.
 
-*Vimjournal* is useful for recorded all sorts of types of data:
+*Vimjournal* is useful for recording many different types of data:
 
   * time logs
   * expenses
@@ -200,7 +200,8 @@ It might be tempting to put, for example, all of the information for a project i
   * reading notes
   * questions
   * observations
-  * experiences
+  * memories
+  * writing
   * dreams
   * just about anything else you can imagine
 
