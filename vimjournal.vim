@@ -31,10 +31,10 @@ autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> \
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
 autocmd FileType vimjournal inoremap <C-x> ✘
 autocmd FileType vimjournal inoremap <C-z> ✔
-autocmd FileType vimjournal nnoremap º 020l<C-a>:w<CR>zcnzz   " flashcard pass
-autocmd FileType vimjournal nnoremap ª 020lr0:w<CR>zcnzz      " flashcard fail
-autocmd FileType vimjournal inoremap <TAB> <C-P>              " code completion (backwards search)
-autocmd FileType vimjournal inoremap <S-TAB> <C-N>            " code completion (forwards search)
+autocmd FileType vimjournal nnoremap º 020l<C-a>:w<CR>zcnzz
+autocmd FileType vimjournal nnoremap ª 020lr0:w<CR>zcnzz
+autocmd FileType vimjournal inoremap <TAB> <C-P>
+autocmd FileType vimjournal inoremap <S-TAB> <C-N>
 
 " autocomplete configuration
 autocmd FileType vimjournal setl complete=.                      " search only current buffer (faster)
