@@ -31,8 +31,6 @@ autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> \
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
 autocmd FileType vimjournal inoremap <C-x> ✘
 autocmd FileType vimjournal inoremap <C-z> ✔
-autocmd FileType vimjournal nnoremap º 020l<C-a>:w<CR>zcnzz
-autocmd FileType vimjournal nnoremap ª 020lr0:w<CR>zcnzz
 autocmd FileType vimjournal inoremap <TAB> <C-P>
 autocmd FileType vimjournal inoremap <S-TAB> <C-N>
 
@@ -50,10 +48,6 @@ function JumpEnd()
   endif
 endfunction
 autocmd FileType vimjournal call JumpEnd()
-
-" flashcard support: jump to a random line or random line matching the last search
-autocmd FileType vimjournal command! RandomLine execute 'normal! '.matchstr(system('od -vAn -N3 -tu4 /dev/urandom'), '^\_s*\zs.\{-}\ze\_s*$') % line('$').'G'
-autocmd FileType vimjournal command! RandomMatch execute 'normal! '.matchstr(system('grep -n -o "'.@/.'" '.expand('%:p').' | shuf -n 1'), '^[0-9]*').'G'
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
