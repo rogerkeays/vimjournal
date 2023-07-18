@@ -131,7 +131,7 @@ The start of a new record indicates the end of the last one. `Rating` is one of 
     :        record  data, url
     &n       record  skips (used to indicate a record's duration overlaps the `n` following records)
 
-All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:melbourne`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. A reverse-hierarchy is used so we use code-completion instead of writing them out in full.
+All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:australia`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. A reverse-hierarchy is used so we can use code-completion instead of writing them out in full.
 
 ## Usage in VIM
 
@@ -184,7 +184,7 @@ Being plain text means you don't need too many special tools to work with *vimjo
 
 The real power of *vimjournal* comes from organising your information in a way that you can find it. Experience shows that the best way to organise information is by type, then by date. *Vimjournal* encourages you to organise your information chronologically, but it is still possible to end up with a big ball of mud if you mix different types of data in your logs.
 
-It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. If your kitchen is well organised, you can make any recipe known to man. Organise by type and use tags to cross-reference logs.
+It might be tempting to put, for example, all of the information for a project in one file, but this would be like organising your kitchen by recipe. It's going to be very cluttered if your have more than three or four recipes. If your kitchen is well organised, you can make any recipe known to man. Organise by type and use tags to cross-reference projects, topics, places, people etc.
 
 *Vimjournal* is useful for recording many different types of data:
 
