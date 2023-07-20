@@ -120,7 +120,7 @@ The start of a new record indicates the end of the last one.
 
 `Value` is one of `* + = - x >` from highest to lowest:
 
-    *  sublime
+    *  critical
     +  positive
     =  neutral
     -  negative
