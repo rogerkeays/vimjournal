@@ -113,10 +113,21 @@ In VIM you use TAB to open and close expanded records, making it easier to scan 
 
 The basic format of the records are:
 
-    YYYYMMDD_HHMM |[rating] [title] [tags]
+    YYYYMMDD_HHMM |[value] [title] [tags]
     [content]
 
-The start of a new record indicates the end of the last one. `Rating` is one of `* + = - x` from highest to lowest. `Tags` begin with a special character and have the following intended usage:
+The start of a new record indicates the end of the last one.
+
+`Value` is one of `* + = - x >` from highest to lowest:
+
+    *  sublime
+    +  positive
+    =  neutral
+    -  negative
+    x  destructive
+    >  undecided/not applicable
+
+`Tags` begin with a special character and have the following intended usage:
 
     prefix   scope   usage
     ------------------------------------------------------
