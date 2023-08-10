@@ -549,7 +549,7 @@ fun Record.makeFlashcards() {
     flashcardNumber++
     Runtime.getRuntime().exec(arrayOf(
         "convert", "-size", "240x320", "xc:black",
-        "-font", "FreeMono", "-weight", "bold", "-pointsize", "24",
+        "-font", "FreeMono-Bold", "-pointsize", "24",
         "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
         "%04d.FROGS.png".format(flashcardNumber)))
