@@ -18,6 +18,7 @@ commands:
   filter-rating <string>
   filter-summary <string>
   make-flashcards
+  make-text-flashcards
   show-durations 
   sort
   sort-by-summary 
@@ -34,6 +35,7 @@ fun main(args: Array<String>) {
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
         "make-flashcards" -> parse().forEach { it.makeFlashcards() }
+        "make-text-flashcards" -> parse().forEach { it.makeTextFlashcard() }
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
@@ -555,6 +557,18 @@ fun Record.makeFlashcards() {
         "%04d.D00.png".format(flashcardNumber)))
 }
 var flashcardNumber = 0
+
+// export a record as a text flashcard suitable for nokia phones
+fun Record.makeTextFlashcard() {
+    textFlashcardNumber++
+    File("%04d.X00.txt".format(textFlashcardNumber))
+            .writeText(((seq + "\n" + summary + " " + tags.joinToString(" "))
+                    .padEnd(TEXT_FLASHCARD_PAGE_SIZE, EM_SPACE))
+                    .replace("$EM_SPACE", "  ") + "\n\n" + body)
+}
+var textFlashcardNumber = 0
+val TEXT_FLASHCARD_PAGE_SIZE = 160
+val EM_SPACE = '\u2003'
 
 fun Record_sortTags_spec() {
     Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
