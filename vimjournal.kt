@@ -34,7 +34,7 @@ fun main(args: Array<String>) {
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
-        "make-flashcards" -> parse().forEach { it.makeFlashcards() }
+        "make-flashcards" -> parse().forEach { it.makeFlashcard() }
         "make-text-flashcards" -> parse().forEach { it.makeTextFlashcard() }
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
@@ -547,14 +547,15 @@ fun String.wrap(width: Int): String {
     }.toString()
 }
 
-fun Record.makeFlashcards() {
+// export a record as an image flashcard suitable for nokia phones
+fun Record.makeFlashcard() {
     flashcardNumber++
     Runtime.getRuntime().exec(arrayOf(
         "convert", "-size", "240x320", "xc:black",
         "-font", "FreeMono-Bold", "-pointsize", "24",
         "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
-        "%04d.D00.png".format(flashcardNumber)))
+        "%04d.X00.png".format(flashcardNumber)))
 }
 var flashcardNumber = 0
 
