@@ -163,7 +163,7 @@ In addition to syntax highlighting, *vimjournal* sets up the following shortcut 
 
 If you are editing a very large compact log, the following modeline will disable the code folding which is only necessary for expanded logs. This will make loading much faster:
 
-    // vim: foldmethod=manual nofoldenable nowrap
+    // vim: foldmethod=manual
 
 ## Command Line Tools
 
