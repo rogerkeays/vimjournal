@@ -25,6 +25,7 @@ autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum),14,2)=~'\
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
+autocmd FileType vimjournal nnoremap <S-TAB> :set invwrap<CR>
 autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/ \|> <CR>A
 autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> \|> 
@@ -48,6 +49,19 @@ function JumpEnd()
   endif
 endfunction
 autocmd FileType vimjournal call JumpEnd()
+
+" toggle wrap, keeping the screen anchored on the cursor line
+" note: broken because <C-e> and <C-y> don't support smooth scrolling
+function ToggleWrap()
+  let original_row = winline()
+  setl invwrap
+  let diff = winline() - original_row
+  if diff > 0
+    execute "normal ".diff."\<C-e>"
+  else
+    execute "normal ".diff."\<C-y>"
+  endif
+endfunction
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
