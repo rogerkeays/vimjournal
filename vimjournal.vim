@@ -58,7 +58,7 @@ autocmd FileType vimjournal call JumpEnd()
 autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*" contained
 
 autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |" contained
+autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}" contained
 autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[>_] .*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[x].*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[-].*$" contains=Bar,Date,Tags
@@ -70,9 +70,9 @@ autocmd BufRead *.log syn match Heading "^## .*$"
 autocmd BufRead *.log syn match Comment "^//.*$"
 autocmd BufRead *.log syn match Comment " // .*$"
 
-autocmd BufRead *.log hi Bar ctermfg=lightgrey
-autocmd BufRead *.log hi Date ctermfg=lightgrey
-autocmd BufRead *.log hi Tags ctermfg=235
+autocmd BufRead *.log hi Bar ctermfg=darkgrey
+autocmd BufRead *.log hi Date ctermfg=darkgrey
+autocmd BufRead *.log hi Tags ctermfg=darkgrey
 autocmd BufRead *.log hi NoStars ctermfg=lightgrey
 autocmd BufRead *.log hi OneStar ctermfg=brown
 autocmd BufRead *.log hi TwoStar ctermfg=red
@@ -82,6 +82,7 @@ autocmd BufRead *.log hi FiveStar ctermfg=yellow
 autocmd BufRead *.log hi Heading ctermfg=white
 autocmd BufRead *.log hi Comment ctermfg=lightgreen
 autocmd BufRead *.log hi Reference ctermfg=lightyellow
+autocmd BufRead *.log hi Folded ctermbg=NONE ctermfg=NONE
 
 "
 " functions to find anacronisms
