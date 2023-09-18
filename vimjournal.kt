@@ -34,8 +34,8 @@ fun main(args: Array<String>) {
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
-        "make-flashcards" -> parse().forEach { it.makeFlashcard() }
-        "make-text-flashcards" -> parse().forEach { it.makeTextFlashcard() }
+        "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
+        "make-text-flashcards" -> parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
@@ -548,28 +548,20 @@ fun String.wrap(width: Int): String {
 }
 
 // export a record as an image flashcard suitable for nokia phones
-fun Record.makeFlashcard() {
-    flashcardNumber++
+fun Record.makeFlashcard(i: Int) {
     Runtime.getRuntime().exec(arrayOf(
         "convert", "-size", "240x320", "xc:black",
         "-font", "FreeMono-Bold", "-pointsize", "24",
         "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
         "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
-        "%04d.X00.png".format(flashcardNumber)))
+        "%04d.X00.png".format(i)))
 }
-var flashcardNumber = 0
 
 // export a record as a text flashcard suitable for nokia phones
-fun Record.makeTextFlashcard() {
-    textFlashcardNumber++
-    File("%04d.X00.txt".format(textFlashcardNumber))
-            .writeText(((seq + "\n" + summary + " " + tags.joinToString(" "))
-                    .padEnd(TEXT_FLASHCARD_PAGE_SIZE, EM_SPACE))
-                    .replace("$EM_SPACE", "  ") + "\n\n" + body)
+fun Record.makeTextFlashcards(i: Int) {
+    File("%04d.txt".format(i)).writeText(seq + "\n" + summary + " " + tags.joinToString(" "))
+    File("%04d.00.txt".format(i)).writeText(seq + "\n" + body)
 }
-var textFlashcardNumber = 0
-val TEXT_FLASHCARD_PAGE_SIZE = 160
-val EM_SPACE = '\u2003'
 
 fun Record_sortTags_spec() {
     Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
