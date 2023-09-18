@@ -70,19 +70,19 @@ autocmd BufRead *.log syn match Heading "^## .*$"
 autocmd BufRead *.log syn match Comment "^//.*$"
 autocmd BufRead *.log syn match Comment " // .*$"
 
-autocmd BufRead *.log hi Bar ctermfg=darkgrey
-autocmd BufRead *.log hi Date ctermfg=darkgrey
-autocmd BufRead *.log hi Tags ctermfg=darkgrey
-autocmd BufRead *.log hi NoStars ctermfg=lightgrey
-autocmd BufRead *.log hi OneStar ctermfg=brown
-autocmd BufRead *.log hi TwoStar ctermfg=red
-autocmd BufRead *.log hi ThreeStar ctermfg=lightblue
-autocmd BufRead *.log hi FourStar ctermfg=green
-autocmd BufRead *.log hi FiveStar ctermfg=yellow
-autocmd BufRead *.log hi Heading ctermfg=white
-autocmd BufRead *.log hi Comment ctermfg=lightgreen
-autocmd BufRead *.log hi Reference ctermfg=lightyellow
-autocmd BufRead *.log hi Folded ctermbg=NONE ctermfg=NONE
+autocmd FileType vimjournal hi Bar ctermfg=darkgrey
+autocmd FileType vimjournal hi Date ctermfg=darkgrey
+autocmd FileType vimjournal hi Tags ctermfg=darkgrey
+autocmd FileType vimjournal hi NoStars ctermfg=lightgrey
+autocmd FileType vimjournal hi OneStar ctermfg=brown
+autocmd FileType vimjournal hi TwoStar ctermfg=red
+autocmd FileType vimjournal hi ThreeStar ctermfg=lightblue
+autocmd FileType vimjournal hi FourStar ctermfg=green
+autocmd FileType vimjournal hi FiveStar ctermfg=yellow
+autocmd FileType vimjournal hi Heading ctermfg=white
+autocmd FileType vimjournal hi Comment ctermfg=lightgreen
+autocmd FileType vimjournal hi Reference ctermfg=lightyellow
+autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=NONE
 
 "
 " functions to find anacronisms
