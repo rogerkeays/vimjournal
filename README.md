@@ -150,16 +150,22 @@ Add [vimjournal.vim](https://raw.githubusercontent.com/rogerkeays/vimjournal/mai
 
 In addition to syntax highlighting, *vimjournal* sets up the following shortcut keys:
 
+Normal mode:
+
     <C-t> append a new record at the end of the file
     <TAB> open and close an expanded record
-    <TAB> tag completion in insert mode: cycle backwards
-    <S-TAB> tag completion in insert mode: cycle forwards
+    <S-TAB> toggle line wrapping
     <C-l> browse the journal directory
     <C-o> open a new record below the current one (compact logs only)
     <C-h> search backwards for non-sequential records (compact logs only)
     <C-n> search forwards for non-sequential records (compact logs only)
-    <C-x> insert a ✘ in insert mode
-    <C-z> insert a ✔ in insert mode
+
+Insert mode:
+
+    <TAB> tag completion in insert mode: cycle backwards
+    <S-TAB> tag completion in insert mode: cycle forwards
+    <C-x> insert a ✘ character
+    <C-z> insert a ✔ character
 
 If you are editing a very large compact log, the following modeline will disable the code folding which is only necessary for expanded logs. This will make loading much faster:
 
