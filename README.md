@@ -224,8 +224,7 @@ It might be tempting to put, for example, all of the information for a project i
 
 ## Known Issues
 
-  * Syntax highlight doesn't work when the expandable records are folded.
-  * Compact logs need to use a modeline to turn off code folding. This saves creating a new file type.
+  * Compact logs should use a `// vim: foldmethod=manual` modeline to improve performance.
 
 ## Related Resources
 
