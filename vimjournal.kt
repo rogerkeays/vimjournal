@@ -17,6 +17,7 @@ commands:
   filter-from <seq> 
   filter-rating <string>
   filter-summary <string>
+  filter-tagged <string>
   make-flashcards
   make-text-flashcards
   show-durations 
@@ -34,6 +35,9 @@ fun main(args: Array<String>) {
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
+        "filter-tagged" -> parse().filter { record ->
+            record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
+        }.forEach { it.print() }
         "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
         "make-text-flashcards" -> parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
         "show-durations" -> parse().withDurations().forEach {
