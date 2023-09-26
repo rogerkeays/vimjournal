@@ -82,7 +82,7 @@ autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\)
 
 autocmd BufRead *.log syn keyword Bar │ contained
 autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[>_] .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[>_].*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[x].*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[-].*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} |[=~].*$" contains=Bar,Date,Tags
