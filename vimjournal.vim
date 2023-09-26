@@ -31,7 +31,7 @@ autocmd FileType vimjournal nnoremap <TAB> za
 autocmd FileType vimjournal nnoremap <S-TAB> :set invwrap<CR>
 autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/ \|> <CR>A
-autocmd FileType vimjournal nnoremap <C-t> Go<C-R>=strftime("%Y%m%d_%H%M")<CR> \|> 
+autocmd FileType vimjournal nnoremap <C-t> :call AppendRecord()<CR>A
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
 autocmd FileType vimjournal inoremap <C-x> ✘
 autocmd FileType vimjournal inoremap <C-z> ✔
@@ -52,6 +52,12 @@ function JumpEnd()
   endif
 endfunction
 autocmd FileType vimjournal call JumpEnd()
+
+" open a new record without unfolding existing records
+function AppendRecord()
+  call setreg("t", strftime("%Y%m%d_%H%M |> \n"))
+  normal G"tp
+endfunction
 
 " toggle wrap, keeping the screen anchored on the cursor line
 " note: broken because <C-e> and <C-y> don't support smooth scrolling
