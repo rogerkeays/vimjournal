@@ -25,7 +25,9 @@ commands:
   sort-by-summary 
   sort-by-rating
   sort-tags
-  sum-durations <tag> 
+  strip-durations
+  sum-durations
+  sum-durations-by-tag <tag>
   test
 
 """
@@ -47,7 +49,9 @@ fun main(args: Array<String>) {
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
         "sort-tags" -> parse().forEach { it.sortTags().print() }
-        "sum-durations" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
+        "strip-durations" -> parse().stripDurationTags().forEach { it.print() }
+        "sum-durations" -> println(parse().sumDurations())
+        "sum-durations-by-tag" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
         "test" -> test()
@@ -329,7 +333,7 @@ fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequ
                             val stop = current.getDateTime().plusMinutes(duration.toLong())
                             val overlap = next.getDateTime().until(stop, MINUTES)
                             if (overlap > 0) System.err.println(
-                                "WARNING: tagged duration overlaps next record by $overlap minutes: ${current.format()}")
+                                "WARNING: tagged duration overlaps next record by $overlap minutes:\n  ${current.format()}\n  ${next.format()}\n")
                         }
                         window.add(next)
                     }
@@ -504,6 +508,14 @@ fun Sequence_stripDurationTags_spec() {
          Record("20000101_0040"))
         .stripDurationTags().first().tags.contains("+10") returns false
     sequenceOf(
+         Record("20000101_0030", tags=listOf("+10")),
+         Record("20000101_0041"))
+        .stripDurationTags().first().tags.contains("+10") returns false
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+10")),
+         Record("20000101_0039"))
+        .stripDurationTags().first().tags.contains("+10") returns false
+    sequenceOf(
          Record("20000101_0030", tags=listOf("+10", "&")),
          Record("20000101_0040"))
         .stripDurationTags().first().tags.contains("+10") returns true
@@ -526,7 +538,8 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
             && second != null
             && first.isExact() && second.isExact()
             && first.tags.find { it.startsWith("&") } == null
-            && second.getDateTime() == first.getDateTime().plusMinutes(duration.toLong())) {
+            && Math.abs(MINUTES.between(first.getDateTime().plusMinutes(duration.toLong()),
+                                        second.getDateTime())) < 2) {
         first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
     } else {
         first
