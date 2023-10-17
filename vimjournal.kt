@@ -22,6 +22,7 @@ commands:
   make-text-flashcards
   show-durations 
   sort
+  sort-approx
   sort-by-summary 
   sort-by-rating
   sort-tags
@@ -46,6 +47,7 @@ fun main(args: Array<String>) {
             println("${it.first.format()} +${it.second}") 
         }
         "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
+        "sort-approx" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
         "sort-tags" -> parse().forEach { it.sortTags().print() }
@@ -153,6 +155,7 @@ fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX |> hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
     "XXXXXXXX_XXXX |> hello world ".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
     "XXXXXXXX_XXXX |> hello world!".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world!")
+    "XXXXXXXX_XXXX |>  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world")
     "XXXXXXXX_XXXX |> hello world #tag !bar".parseRecord().summary returns "hello world"
     "XXXXXXXX_XXXX |> hello world #tag !bar".parseRecord().tags returns listOf("#tag", "!bar")
     "XXXXXXXX_XXXX |> hello world  #tag !bar".parseRecord().summary returns "hello world"
@@ -174,7 +177,7 @@ fun String.parseRecord(body: String): Record {
     val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
     return Record(
         seq = slice(0..12),
-        summary = slice(16..tagIndex).trim(),
+        summary = slice(17..tagIndex).trimEnd(),
         rating = slice(15..15).trim(),
         tags = drop(tagIndex + 1).parseTags(),
         body = body)
