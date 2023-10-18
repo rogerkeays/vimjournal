@@ -22,7 +22,6 @@ commands:
   make-text-flashcards
   show-durations 
   sort
-  sort-approx
   sort-by-summary 
   sort-by-rating
   sort-tags
@@ -46,8 +45,7 @@ fun main(args: Array<String>) {
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
-        "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
-        "sort-approx" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
+        "sort" -> parse().sortedWith { a, b -> a.compareTo(b) }.forEach { it.print() }
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
         "sort-tags" -> parse().forEach { it.sortTags().print() }
@@ -95,6 +93,26 @@ fun Record.format() = buildString {
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
 fun Record.print() = println(format())
+
+fun Record_compareTo_spec() {
+    Record("19990101_0000").compareTo(Record("19990101_0000")) returns 0
+    Record("19990101_0000").compareTo(Record("19990101_XXXX")) returns 0
+    Record("19990101_1200").compareTo(Record("19990101_XXXX")) returns 0
+    Record("19990101_XXXX").compareTo(Record("19990101_0000")) returns 0
+    Record("19990101_AAAA").compareTo(Record("19990101_0000")) returns 0
+    Record("19990101_XXXX").compareTo(Record("19990101_1200")) returns 0
+    Record("19990101_XXXX").compareTo(Record("19990101_XXXX")) returns 0
+    Record("19990101_0000").compareTo(Record("19990101_0001")) returns -1
+    Record("19990101_0000").compareTo(Record("19990102_0000")) returns -1
+    Record("19990102_0000").compareTo(Record("19990101_0000")) returns 1
+    Record("19990101_0001").compareTo(Record("19990101_0000")) returns 1
+}
+fun Record.compareTo(other: Record): Int {
+    val stop = minOf(seqStopRegex.find(this.seq)?.range?.start ?: this.seq.length,
+                     seqStopRegex.find(other.seq)?.range?.start ?: this.seq.length)
+    return this.seq.take(stop).compareTo(other.seq.take(stop))
+}
+val seqStopRegex = Regex("[A-Za-z]")
 
 fun String_isHeader_spec() {
     "00000000_0000 |>".isHeader() returns true
