@@ -22,6 +22,7 @@ commands:
   make-text-flashcards
   show-durations 
   sort
+  sort-rough
   sort-by-summary 
   sort-by-rating
   sort-tags
@@ -45,7 +46,8 @@ fun main(args: Array<String>) {
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
-        "sort" -> parse().sortedWith { a, b -> a.compareTo(b) }.forEach { it.print() }
+        "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
+        "sort-rough" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
         "sort-tags" -> parse().forEach { it.sortTags().print() }
@@ -94,6 +96,7 @@ fun Record.format() = buildString {
 }
 fun Record.print() = println(format())
 
+// sort only on numeric values, so we can mix exact and approximate date/times
 fun Record_compareTo_spec() {
     Record("19990101_0000").compareTo(Record("19990101_0000")) returns 0
     Record("19990101_0000").compareTo(Record("19990101_XXXX")) returns 0
