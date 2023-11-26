@@ -21,16 +21,16 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
 autocmd FileType vimjournal setl wrap linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart) fillchars=
-autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(14)==124?'>1'\:1
+autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(15)==124?'>1'\:1
 
 " slower, but more correct
-"autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'\|[-_>x=~+*]'?'<1'\:1
+"autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-_>.x=~+*]\|'?'<1'\:1
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
 autocmd FileType vimjournal nnoremap <S-TAB> :set invwrap<CR>
 autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
-autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/ \|> <CR>A
+autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/ >\| <CR>A
 autocmd FileType vimjournal nnoremap <C-t> :call AppendRecord()<CR>A
 autocmd FileType vimjournal inoremap <C-t> // <C-R>=strftime("%Y%m%d_%H%M")<CR> 
 autocmd FileType vimjournal inoremap <C-x> ✘
@@ -56,7 +56,7 @@ autocmd FileType vimjournal call JumpEnd()
 
 " open a new record without unfolding existing records
 function AppendRecord()
-  call setreg("t", strftime("%Y%m%d_%H%M |> \n"))
+  call setreg("t", strftime("%Y%m%d_%H%M >| \n"))
   normal G"tp
 endfunction
 
@@ -83,12 +83,12 @@ autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\)
 
 autocmd BufRead *.log syn keyword Bar │ contained
 autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[>_].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[x].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[-].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[=~].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[+].*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ]|[*].*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][>_]| .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][x.]| .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][-]| .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][=~]| .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][+]| .*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][*]| .*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading "^==[^ ].*$"
 autocmd BufRead *.log syn match Heading "^## .*$"
 autocmd BufRead *.log syn match Comment "^//.*$"
