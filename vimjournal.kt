@@ -74,6 +74,7 @@ data class Record(
         "~" -> 3
         "-" -> 4
         "x" -> 5
+        "." -> 5
         else -> 6
     }
 }
