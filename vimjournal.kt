@@ -80,17 +80,16 @@ data class Record(
 }
 
 fun Record_format_spec() {
-    Record("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX |>"
-    Record("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX |> hello world"
-    Record("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX |+ hello world"
-    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX |> hello world #foo !bar"
-    Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX |> hello world\n\nbody\n"
-    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX |> #foo !bar"
+    Record("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX >|"
+    Record("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX >| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX +| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
+    Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
+    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| #foo !bar"
 }
 fun Record.format() = buildString {
-    append(seq)
-    append(" |")
-    append(rating)
+    append(seq).append(" ")
+    append(rating).append("|")
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
@@ -119,24 +118,24 @@ fun Record.compareTo(other: Record): Int {
 val seqStopRegex = Regex("[A-Za-z]")
 
 fun String_isHeader_spec() {
-    "00000000_0000 |>".isHeader() returns true
-    "0000XXXX_XXXX |>".isHeader() returns true
-    "0000XXXX_YYYY |>".isHeader() returns true
-    "20210120_2210 |>".isHeader() returns true
-    "20210120_2210 |*".isHeader() returns true
-    "20210120_2210 |> ".isHeader() returns true
-    "20210120_2210 |> hello world".isHeader() returns true
-    "20210120_2210 |> hello world\n".isHeader() returns true
-    "20210120_2210 |> hello world #truth".isHeader() returns true
-    "20210120_2210|> hello world".isHeader() returns false
+    "00000000_0000 >|".isHeader() returns true
+    "0000XXXX_XXXX >|".isHeader() returns true
+    "0000XXXX_YYYY >|".isHeader() returns true
+    "20210120_2210 >|".isHeader() returns true
+    "20210120_2210 *|".isHeader() returns true
+    "20210120_2210 >| ".isHeader() returns true
+    "20210120_2210 >| hello world".isHeader() returns true
+    "20210120_2210 >| hello world\n".isHeader() returns true
+    "20210120_2210 >| hello world #truth".isHeader() returns true
+    "20210120_2210>| hello world".isHeader() returns false
     "20210120_2210   hello world".isHeader() returns false
-    "202101202210  |> hello world".isHeader() returns false
+    "202101202210  >| hello world".isHeader() returns false
     "foo".isHeader() returns false
     "".isHeader() returns false
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = "->x=~+*"
-val headerRegex = Regex("^[0-9A-Z_]{13} \\|[$markerChars].*\n?$")
+val headerRegex = Regex("^[0-9A-Z_]{13} [$markerChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
@@ -172,27 +171,27 @@ val tagChars = "/+#=!>@:&"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
 fun String_parseRecord_spec() {
-    "XXXXXXXX_XXXX |>".parseRecord() returns Record("XXXXXXXX_XXXX")
-    "XXXXXXXX_XXXX |+".parseRecord() returns Record("XXXXXXXX_XXXX", rating="+")
-    "XXXXXXXX_XXXX |> hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
-    "XXXXXXXX_XXXX |> hello world ".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
-    "XXXXXXXX_XXXX |> hello world!".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world!")
-    "XXXXXXXX_XXXX |>  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world")
-    "XXXXXXXX_XXXX |> hello world #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world #tag !bar".parseRecord().tags returns listOf("#tag", "!bar")
-    "XXXXXXXX_XXXX |> hello world  #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world #tag '!bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world '#tag !bar".parseRecord().summary returns "hello world '#tag"
-    "XXXXXXXX_XXXX |> hello world '#tag' !bar".parseRecord().summary returns "hello world '#tag'"
-    "XXXXXXXX_XXXX |> hello world &".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world & #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world &1 #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world & '#tag !bar".parseRecord().summary returns "hello world & '#tag"
-    "XXXXXXXX_XXXX |> hello world #tag !bar &".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world #tag !bar &1".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello & world".parseRecord().summary returns "hello & world"
-    "XXXXXXXX_XXXX |> hello & world #tag !bar".parseRecord().summary returns "hello & world"
-    "XXXXXXXX_XXXX |> 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
+    "XXXXXXXX_XXXX >|".parseRecord() returns Record("XXXXXXXX_XXXX")
+    "XXXXXXXX_XXXX +|".parseRecord() returns Record("XXXXXXXX_XXXX", rating="+")
+    "XXXXXXXX_XXXX >| hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX >| hello world ".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX >| hello world!".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world!")
+    "XXXXXXXX_XXXX >|  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world")
+    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX >| hello world  #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world #tag '!bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world '#tag !bar".parseRecord().summary returns "hello world '#tag"
+    "XXXXXXXX_XXXX >| hello world '#tag' !bar".parseRecord().summary returns "hello world '#tag'"
+    "XXXXXXXX_XXXX >| hello world &".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world & #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world &1 #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world & '#tag !bar".parseRecord().summary returns "hello world & '#tag"
+    "XXXXXXXX_XXXX >| hello world #tag !bar &".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world #tag !bar &1".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
+    "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
+    "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
 }
 fun String.parseRecord() = parseRecord("")
 fun String.parseRecord(body: String): Record {
@@ -200,23 +199,23 @@ fun String.parseRecord(body: String): Record {
     return Record(
         seq = slice(0..12),
         summary = slice(17..tagIndex).trimEnd(),
-        rating = slice(15..15).trim(),
+        rating = slice(14..14).trim(),
         tags = drop(tagIndex + 1).parseTags(),
         body = body)
 }
 
 fun String_parse_spec() {
-    "XXXXXXXX_XXXX |> hello world".parse().first().summary returns "hello world"
-    "XXXXXXXX_XXXX |> hello world\nbody\n".parse().first().body returns "body"
-    "XXXXXXXX_XXXX |> hello world\n\n  body\n".parse().first().body returns "  body"
-    "XXXXXXXX_XXXX |> hello world\n\n  body".parse().first().body returns "  body"
-    "XXXXXXXX_XXXX |> hello world\nXXXXXXXX_XXXX |> hello world 2".parse().count() returns 2
-    "XXXXXXXX_XXXX |> hello world ##tag !bar\n\nbody goes here\n\n".parse().first().body returns "body goes here"
-    "XXXXXXXX_XXXX |> hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n".parse().first().body returns "body goes here"
-    "XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody goes here\n".parse().first().tags returns listOf("#tag", "!bar")
-    "XXXXXXXX_XXXX |> hello world #tag !bar\n\nbody #notag goes here\n".parse().first().tags returns listOf("#tag", "!bar")
-    "XXXXXXXX_XXXX |> hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
-    "// vim: modeline\nXXXXXXXX_XXXX |> hello world\nbody\n".parse().first().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world".parse().first().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world\nbody\n".parse().first().body returns "body"
+    "XXXXXXXX_XXXX >| hello world\n\n  body\n".parse().first().body returns "  body"
+    "XXXXXXXX_XXXX >| hello world\n\n  body".parse().first().body returns "  body"
+    "XXXXXXXX_XXXX >| hello world\nXXXXXXXX_XXXX >| hello world 2".parse().count() returns 2
+    "XXXXXXXX_XXXX >| hello world ##tag !bar\n\nbody goes here\n\n".parse().first().body returns "body goes here"
+    "XXXXXXXX_XXXX >| hello world ##tag !bar\r\n\r\nbody goes here\r\n\r\n".parse().first().body returns "body goes here"
+    "XXXXXXXX_XXXX >| hello world #tag !bar\n\nbody goes here\n".parse().first().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX >| hello world #tag !bar\n\nbody #notag goes here\n".parse().first().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX >| hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
+    "// vim: modeline\nXXXXXXXX_XXXX >| hello world\nbody\n".parse().first().summary returns "hello world"
 }
 fun File.parse() = parse(reader().buffered())
 fun String.parse() = parse(reader().buffered())
