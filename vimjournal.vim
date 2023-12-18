@@ -47,8 +47,8 @@ autocmd FileType vimjournal setl iskeyword-=_                    " word navigati
 " jump to the end of the file when first loaded
 function JumpEnd()
   if !exists("b:vimjournal_jumped")
-    normal G
     setl foldmethod=expr
+    normal GzR
     let b:vimjournal_jumped = 1
   endif
 endfunction
