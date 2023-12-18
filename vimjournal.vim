@@ -60,19 +60,6 @@ function AppendRecord()
   normal G"tp
 endfunction
 
-" toggle wrap, keeping the screen anchored on the cursor line
-" note: broken because <C-e> and <C-y> don't support smooth scrolling
-function ToggleWrap()
-  let original_row = winline()
-  setl invwrap
-  let diff = winline() - original_row
-  if diff > 0
-    execute "normal ".diff."\<C-e>"
-  else
-    execute "normal ".diff."\<C-y>"
-  endif
-endfunction
-
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
 " unless you create a separate file in .vim/syntax, which makes installation more screwy
@@ -131,4 +118,88 @@ function FindLastAnac()
   endwhile
 endfunction
 autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
+
+" keep the screen still when toggling wrap
+" credit: Vivian De Smedt
+" https://vi.stackexchange.com/questions/43083/can-you-prevent-then-screen-jumping-when-toggling-the-wrap-option
+function GetWinWidth()
+  let ret = winwidth(0)
+
+  if &signcolumn !=# 'no'
+    let ret = ret - 2
+  endif
+
+  if &number
+    let ret = ret - max([&numberwidth, float2nr(log10(line('$'))) + 2])
+  endif
+
+  return ret
+endfunction
+
+function WrapRowDelta(line1, line2)
+  " This is an approximation that could be improved :-)
+  let ret = 0
+  let max_width = GetWinWidth()
+  for i in range(a:line1, a:line2 - 1)
+    if foldclosed(i) < 0
+      let ret = ret + float2nr(ceil(str2float(len(getline(i)) + 1) / max_width))
+    elseif foldclosed(i) == i
+      let ret = ret + 1
+    endif
+  endfor
+  return ret
+endfunction
+
+function! NoWrapRowDelta(line1, line2)
+  " return a:line2 - a:line1
+  let ret = 0
+  for i in range(a:line1, a:line2 - 1)
+    if foldclosed(i) < 0
+      let ret = ret + 1
+    elseif foldclosed(i) == i
+      let ret = ret + 1
+    endif
+  endfor
+  return ret
+endfunction
+
+function! CorrectCursorScroll()
+  if &wrap
+    " Estimation of the previous space:
+    let nonwrap_row_delta = NoWrapRowDelta(line('w0'), line('.'))
+
+    " Value of the current space
+    let wrap_row_delta = screenpos(0, line('.'), col('.')).row - 1
+    while wrap_row_delta > nonwrap_row_delta
+      exe "normal! \<C-e>"
+      let r = screenpos(0, line('.'), col('.')).row - 1
+      if wrap_row_delta == r
+        break
+      endif
+      let wrap_row_delta = r
+    endwhile
+    if wrap_row_delta < nonwrap_row_delta
+      exe "normal! \<C-y>"
+    endif
+  else
+    " Estimation of the previous space:
+    let wrap_row_delta = WrapRowDelta(line('w0'), line('.'))
+
+    " Value of the current space
+    let nonwrap_row_delta = NoWrapRowDelta(line('w0'), line('.'))
+    while wrap_row_delta > nonwrap_row_delta
+      exe "normal! \<C-y>"
+      let r = NoWrapRowDelta(line('w0'), line('.'))
+      if nonwrap_row_delta == r
+        break
+      endif
+      let nonwrap_row_delta = r
+    endwhile
+    if wrap_row_delta < nonwrap_row_delta
+      exe "normal! \<C-e>"
+    endif
+  endif
+endfunction
+
+autocmd! OptionSet wrap call CorrectCursorScroll()
 
