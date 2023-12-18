@@ -19,7 +19,7 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
 " presentation and code folding
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
-autocmd FileType vimjournal setl wrap linebreak breakindent showbreak=>\ 
+autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart) fillchars=
 autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(15)==124?'>1'\:1
 
@@ -47,10 +47,10 @@ autocmd FileType vimjournal setl iskeyword-=_                    " word navigati
 " jump to the end of the file when first loaded
 function JumpEnd()
   if !exists("b:vimjournal_jumped")
+    normal G
+    setl foldmethod=expr
     let b:vimjournal_jumped = 1
-    normal Gzm
   endif
-  setl foldmethod=expr
 endfunction
 autocmd FileType vimjournal call JumpEnd()
 
