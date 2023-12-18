@@ -82,13 +82,12 @@ endfunction
 autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*" contained
 
 autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][>_]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][x.]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][-]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][=~]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][+]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][*]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\} .|" contained
+autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][>_x.1 ]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][-v2]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][=~3]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][+^4]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[< ][*5]|.*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading "^==[^ ].*$"
 autocmd BufRead *.log syn match Heading "^## .*$"
 autocmd BufRead *.log syn match Comment "^//.*$"
@@ -97,16 +96,15 @@ autocmd BufRead *.log syn match Comment " // .*$"
 autocmd FileType vimjournal hi Bar ctermfg=darkgrey
 autocmd FileType vimjournal hi Date ctermfg=darkgrey
 autocmd FileType vimjournal hi Tags ctermfg=darkgrey
-autocmd FileType vimjournal hi NoStars ctermfg=lightgrey
-autocmd FileType vimjournal hi OneStar ctermfg=lightgrey
-autocmd FileType vimjournal hi TwoStar ctermfg=darkcyan
-autocmd FileType vimjournal hi ThreeStar ctermfg=darkgreen
-autocmd FileType vimjournal hi FourStar ctermfg=red
-autocmd FileType vimjournal hi FiveStar ctermfg=yellow
+autocmd FileType vimjournal hi OneStar ctermfg=darkgrey
+autocmd FileType vimjournal hi TwoStar ctermfg=lightgrey
+autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
+autocmd FileType vimjournal hi FourStar ctermfg=cyan
+autocmd FileType vimjournal hi FiveStar ctermfg=white
 autocmd FileType vimjournal hi Heading ctermfg=white
 autocmd FileType vimjournal hi Comment ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow
-autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=NONE
+autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=brown
 
 "
 " functions to find anacronisms
