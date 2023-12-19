@@ -91,7 +91,7 @@ autocmd FileType vimjournal hi FiveStar ctermfg=white
 autocmd FileType vimjournal hi Heading ctermfg=white
 autocmd FileType vimjournal hi Comment ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow
-autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=94
+autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=240
 
 "
 " functions to find anacronisms
