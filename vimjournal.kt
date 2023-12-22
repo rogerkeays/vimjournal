@@ -140,8 +140,8 @@ fun String_isHeader_spec() {
     "".isHeader() returns false
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
-val markerChars = "->x=~+*"
-val headerRegex = Regex("^[0-9A-Z_]{13} [$markerChars]\\|.*\n?$")
+val ratingChars = "->x=~+*."
+val headerRegex = Regex("^[0-9A-Z_]{13} [$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
