@@ -14,6 +14,7 @@ val usage = """
 usage: vimjournal.kt [command] [parameters]
 
 commands:
+  format
   filter-from <seq> 
   filter-rating <string>
   filter-summary <string>
@@ -35,6 +36,7 @@ commands:
 
 fun main(args: Array<String>) {
     when (if (args.isNotEmpty()) args[0] else "") {
+        "format" -> parse().forEach { it.print() }
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
