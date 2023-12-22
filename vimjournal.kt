@@ -66,7 +66,9 @@ data class Record(
     val summary: String = "",
     val rating: String = ">",
     val tags: List<String> = listOf(),
-    val body: String = "") {
+    val body: String = "",
+    val marker: Char = ' ') {
+
     val priority = when (rating) {
         "*" -> 1
         "+" -> 2
@@ -86,11 +88,13 @@ fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
     Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
     Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| #foo !bar"
+    Record("XXXXXXXX_XXXX", "hello world", marker='<').format() returns "XXXXXXXX_XXXX >|<hello world"
+    Record("XXXXXXXX_XXXX", " hello world", marker='<').format() returns "XXXXXXXX_XXXX >|< hello world"
 }
 fun Record.format() = buildString {
     append(seq).append(" ")
     append(rating).append("|")
-    if (!summary.isBlank()) append(' ').append(summary)
+    if (!summary.isBlank()) append(marker).append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
     if (!body.isBlank()) append("\n\n").append(body).append("\n")
 }
@@ -192,6 +196,8 @@ fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
+    "XXXXXXXX_XXXX >|<hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world", marker='<')
+    "XXXXXXXX_XXXX >|< hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world", marker='<')
 }
 fun String.parseRecord() = parseRecord("")
 fun String.parseRecord(body: String): Record {
@@ -201,7 +207,8 @@ fun String.parseRecord(body: String): Record {
         summary = slice(17..tagIndex).trimEnd(),
         rating = slice(14..14).trim(),
         tags = drop(tagIndex + 1).parseTags(),
-        body = body)
+        body = body,
+        marker = if (length > 16) get(16) else ' ')
 }
 
 fun String_parse_spec() {
