@@ -627,7 +627,7 @@ fun Record.sortTags(): Record {
         sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
     })
 }
-val sortTagsOrder = "/+#=!>@:&"
+val sortTagsOrder = "/+#!=>@:&"
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
