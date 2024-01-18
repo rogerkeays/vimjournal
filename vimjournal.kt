@@ -95,10 +95,10 @@ fun Record_format_spec() {
 }
 fun Record.format() = buildString {
     append(seq).append(marker)
-    append(rating).append("|")
+    append(rating).append('|')
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
-    if (!body.isBlank()) append("\n\n").append(body).append("\n")
+    if (!body.isBlank()) append("\n\n").append(body).append('\n')
 }
 fun Record.print() = println(format())
 
