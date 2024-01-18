@@ -133,6 +133,7 @@ fun String_isHeader_spec() {
     "20210120_2210 >| hello world".isHeader() returns true
     "20210120_2210 >| hello world\n".isHeader() returns true
     "20210120_2210 >| hello world #truth".isHeader() returns true
+    "20210120_2210!>| hello world".isHeader() returns true
     "20210120_2210>| hello world".isHeader() returns false
     "20210120_2210   hello world".isHeader() returns false
     "202101202210  >| hello world".isHeader() returns false
@@ -140,8 +141,9 @@ fun String_isHeader_spec() {
     "".isHeader() returns false
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
+val markerChars = " !"
 val ratingChars = "->x=~+*."
-val headerRegex = Regex("^[0-9A-Z_]{13} [$ratingChars]\\|.*\n?$")
+val headerRegex = Regex("^[0-9A-Z_]{13}[$markerChars][$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
