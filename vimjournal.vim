@@ -63,12 +63,12 @@ endfunction
 " filter the current file using a regexp and display the results in a separate window
 " if no regexp is supplied, the last search pattern is used
 function Filter(regexp)
-  execute 'vimgrep /\<'.a:regexp.'\>/ %'
+  execute 'vimgrep /'.a:regexp.'\>/ %'
   tab copen
   set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
   syn match metadata /^.*|[0-9]\+ col [0-9]\+| / transparent conceal
 endfunction
-command -nargs=? Filter call Filter(<q-args>)
+command -nargs=? Filter call Filter(<f-args>)
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
