@@ -65,15 +65,16 @@ endfunction
 function Grep(regexp, files)
   execute 'vimgrep /'.a:regexp.'\>/j '.a:files
   if !exists("g:vimjournal_copened")
-    0tab copen
+    $tab copen
     set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
     let g:vimjournal_copened = 1
 
     " switchbuf=newtab is ignored when there are no splits, so we use :tab explicitely
     " https://vi.stackexchange.com/questions/6996
-    nnoremap <Enter> :$tab .cc<CR>
+    nnoremap <Enter> :-tab .cc<CR>
   else
-    normal 1gt
+    $tabnext
+    normal 1G
   endif
 
   " hide the quickfix metadata
