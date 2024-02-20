@@ -60,15 +60,27 @@ function AppendRecord()
   normal G"tp
 endfunction
 
-" filter the current file using a regexp and display the results in a separate window
+" filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
-function Filter(regexp)
-  execute 'vimgrep /'.a:regexp.'\>/ %'
-  tab copen
-  set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
+function Grep(regexp, files)
+  execute 'vimgrep /'.a:regexp.'\>/j '.a:files
+  if !exists("g:vimjournal_copened")
+    0tab copen
+    set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
+    let g:vimjournal_copened = 1
+
+    " switchbuf=newtab is ignored when there are no splits, so we use :tab explicitely
+    " https://vi.stackexchange.com/questions/6996
+    nnoremap <Enter> :$tab .cc<CR>
+  else
+    normal 1gt
+  endif
+
+  " hide the quickfix metadata
   syn match metadata /^.*|[0-9]\+ col [0-9]\+| / transparent conceal
 endfunction
-command -nargs=? Filter call Filter(<f-args>)
+command -nargs=? Filter call Grep(<f-args>, '%')
+command -nargs=? Find call Grep(<f-args>, '*.log')
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
