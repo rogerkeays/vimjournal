@@ -63,7 +63,7 @@ endfunction
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
 function Grep(regexp, files)
-  execute 'vimgrep /'.a:regexp.'\>/j '.a:files
+  execute 'vimgrep /'.a:regexp.'/j '.a:files
   if !exists("g:vimjournal_copened")
     $tab copen
     set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
