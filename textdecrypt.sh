@@ -16,7 +16,7 @@ stty echo
 echo
 
 while [ 1 ]; do
-  echo -n "> "
+  echo -n "< "
   read LINE
   [ "$LINE" ] && echo $LINE | decrypt
 done
