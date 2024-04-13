@@ -10,7 +10,7 @@
 alias decrypt="openssl enc -aes-256-cbc -pbkdf2 -base64 -A -pass env:PASS -in /dev/stdin -d"
 
 stty -echo
-read -p "Enter your encryption password: " PASS
+read -p "Enter your decryption password: " PASS
 export PASS
 stty echo
 echo
