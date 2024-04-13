@@ -18,6 +18,6 @@ echo
 while [ 1 ]; do
   echo -n "< "
   read LINE
-  [ "$LINE" ] && echo $LINE | decrypt
+  [ "$LINE" ] && echo "$LINE" | decrypt
 done
 

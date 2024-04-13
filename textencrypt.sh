@@ -26,8 +26,8 @@ fi
 while [ 1 ]; do
   echo -n "> "
   read LINE
-  if [ $LINE ]; then
-    echo $LINE | encrypt
+  if [ "$LINE" ]; then
+    echo "$LINE" | encrypt
     echo
   fi
 done
