@@ -100,8 +100,8 @@ autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! 
 autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading "^==[^ ].*$"
 autocmd BufRead *.log syn match Heading "^## .*$"
-autocmd BufRead *.log syn match Comment "^//.*$"
-autocmd BufRead *.log syn match Comment " // .*$"
+autocmd BufRead *.log syn match Comments "^//.*$"
+autocmd BufRead *.log syn match Comments " // .*$"
 
 autocmd FileType vimjournal hi Bar ctermfg=darkgrey
 autocmd FileType vimjournal hi Date ctermfg=darkgrey
@@ -112,7 +112,7 @@ autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
 autocmd FileType vimjournal hi FourStar ctermfg=cyan
 autocmd FileType vimjournal hi FiveStar ctermfg=white
 autocmd FileType vimjournal hi Heading ctermfg=white
-autocmd FileType vimjournal hi Comment ctermfg=lightgreen
+autocmd FileType vimjournal hi Comments ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow
 autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=darkgrey
 
