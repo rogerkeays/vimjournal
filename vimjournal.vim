@@ -62,7 +62,7 @@ endfunction
 
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
-function Grep(regexp, files)
+function GrepJournals(regexp, files)
   execute 'vimgrep /'.a:regexp.'/j '.a:files
   if !exists("g:vimjournal_copened")
     $tab copen
@@ -80,8 +80,8 @@ function Grep(regexp, files)
   " hide the quickfix metadata
   syn match metadata /^.*|[0-9]\+ col [0-9]\+| / transparent conceal
 endfunction
-command -nargs=? Filter call Grep(<f-args>, '%')
-command -nargs=? Find call Grep(<f-args>, '*.log')
+autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
