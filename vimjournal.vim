@@ -71,7 +71,7 @@ function GrepJournals(regexp, files)
 
     " switchbuf=newtab is ignored when there are no splits, so we use :tab explicitely
     " https://vi.stackexchange.com/questions/6996
-    nnoremap <Enter> :-tab .cc<CR>
+    nnoremap <buffer> <Enter> :-tab .cc<CR>
   else
     $tabnext
     normal 1G
