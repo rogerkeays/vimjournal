@@ -82,6 +82,7 @@ function GrepJournals(regexp, files)
 endfunction
 autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
+autocmd FileType vimjournal hi QuickFixLine ctermbg=None
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
