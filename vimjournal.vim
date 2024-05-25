@@ -136,7 +136,7 @@ autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
 function FindLastAnac()
   while line(".") != 1
     let current = getline(".")
-    if current != "" && current[0:12] < getline(line(".") - 1)[0:12]
+    if trim(current) != "" && current[0:12] < getline(line(".") - 1)[0:12]
       break
     endif
     normal k
