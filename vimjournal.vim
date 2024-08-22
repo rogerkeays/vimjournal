@@ -31,6 +31,7 @@ autocmd FileType vimjournal nnoremap <TAB> za
 autocmd FileType vimjournal nnoremap <S-TAB> :set invwrap<CR>
 autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/>\| <CR>A
+autocmd FileType vimjournal nnoremap <C-p> yyP:s/.\|.*/>\| <CR>A
 autocmd FileType vimjournal nnoremap <C-t> :call AppendRecord()<CR>A
 autocmd FileType vimjournal inoremap <C-t> <C-R>=strftime("%Y%m%d_%H%M")<CR>
 autocmd FileType vimjournal inoremap <C-x> ✘
