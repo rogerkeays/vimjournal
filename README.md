@@ -157,6 +157,7 @@ Normal mode:
     <S-TAB> toggle line wrapping
     <C-l> browse the journal directory
     <C-o> open a new record below the current one (compact logs only)
+    <C-p> open a new record above the current one
     <C-h> search backwards for non-sequential records (compact logs only)
     <C-n> search forwards for non-sequential records (compact logs only)
 
