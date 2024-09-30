@@ -61,10 +61,8 @@ function AppendRecord()
   normal G"tp
 endfunction
 
-" filter the current file using a regexp and display the results in a separate tab
-" if no regexp is supplied, the last search pattern is used
-function GrepJournals(regexp, files)
-  execute 'vimgrep /'.a:regexp.'/j '.a:files
+" opens the quickfix list in a tab with no formatting
+function DisplayVimjournalQuickfixTab()
   if !exists("g:vimjournal_copened")
     $tab copen
     set switchbuf+=usetab nowrap conceallevel=2 concealcursor=nc
@@ -81,9 +79,16 @@ function GrepJournals(regexp, files)
   " hide the quickfix metadata
   syn match metadata /^.*|[0-9]\+ col [0-9]\+| / transparent conceal
 endfunction
+autocmd FileType vimjournal hi QuickFixLine ctermbg=None
+
+" filter the current file using a regexp and display the results in a separate tab
+" if no regexp is supplied, the last search pattern is used
+function GrepJournals(regexp, files)
+  execute 'vimgrep /'.a:regexp.'/j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
 autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
-autocmd FileType vimjournal hi QuickFixLine ctermbg=None
 
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
