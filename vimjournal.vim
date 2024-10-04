@@ -77,7 +77,7 @@ function DisplayVimjournalQuickfixTab()
   endif
 
   " hide the quickfix metadata
-  syn match metadata /^.*|[0-9]\+ col [0-9]\+| / transparent conceal
+  syn match metadata /^.*|[0-9]\+ col [-0-9]\+| / transparent conceal
 endfunction
 autocmd FileType vimjournal hi QuickFixLine ctermbg=None
 
