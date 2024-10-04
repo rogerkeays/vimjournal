@@ -53,7 +53,7 @@ function JumpEnd()
   endif
   setl foldmethod=expr
 endfunction
-autocmd FileType vimjournal call JumpEnd()
+autocmd BufWinEnter *.log call JumpEnd()
 
 " open a new record without unfolding existing records
 function AppendRecord()
