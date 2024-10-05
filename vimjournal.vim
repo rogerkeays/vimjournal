@@ -21,7 +21,7 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
 autocmd FileType vimjournal setl nowrap smoothscroll linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart-1) fillchars=fold:\ 
-autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(15)==124?'0'\:1
+autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)[15]=='\|'?'0'\:1
 
 " slower, but more correct
 "autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-_>.x=~+*]\|'?'<1'\:1
