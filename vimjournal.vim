@@ -14,7 +14,6 @@
 "   : data
 "   & skips
 "
-
 autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
 " presentation and code folding
@@ -129,7 +128,7 @@ function ToStars(char)
   elseif a:char == '=' || a:char == '3' | return 3
   elseif a:char == '-' || a:char == '2' | return 2
   elseif a:char == 'x' || a:char == '1' | return 1
-  else return 0 | endif
+  else | return 0 | endif
 endfunction
 
 " find anacronisms: <C-n> for forward search
