@@ -117,10 +117,11 @@ autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\)
 
 autocmd BufRead *.log syn keyword Bar │ contained
 autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|" contained
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][>_x.1 ]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-v2]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=~3]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+^4]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][> ]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][x1]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-2]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$" contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading "^==[^ ].*$"
 autocmd BufRead *.log syn match Heading "^## .*$"
@@ -130,6 +131,7 @@ autocmd BufRead *.log syn match Comments " // .*$"
 autocmd FileType vimjournal hi Bar ctermfg=darkgrey
 autocmd FileType vimjournal hi Date ctermfg=darkgrey
 autocmd FileType vimjournal hi Tags ctermfg=darkgrey
+autocmd FileType vimjournal hi NoStars ctermfg=darkgrey
 autocmd FileType vimjournal hi OneStar ctermfg=darkgrey
 autocmd FileType vimjournal hi TwoStar ctermfg=lightgrey
 autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
