@@ -91,7 +91,7 @@ endfunction
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
 function GrepJournals(regexp, files)
-  execute 'vimgrep `'.a:regexp.'`j '.a:files
+  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
 autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
