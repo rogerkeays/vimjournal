@@ -4,15 +4,15 @@
 " to install, save (or symlink) to your $HOME/.vim/ftdetect directory
 "
 " tagging scheme:
-"   / category          (file)
-"   + person, duration  (global)
-"   # topic             (global)
-"   = project           (global)
-"   ! problem, goal     (global)
-"   > context           (entry)
-"   @ place             (global)
-"   : data, url         (entry)
-"   & skips             (entry)
+"   / category
+"   + person, duration
+"   # topic
+"   = project
+"   ! problem
+"   > context
+"   @ place
+"   : data
+"   & skips
 "
 
 autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
@@ -21,10 +21,8 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
 autocmd FileType vimjournal setl nowrap smoothscroll linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart-1) fillchars=fold:\ 
-autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)[15]=='\|'?'0'\:1
-
-" slower, but more correct
-"autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-_>.x=~+*]\|'?'<1'\:1
+autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)[15]=='\|'?'0'\:1 " imprecise, but fast
+"autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-x=+*>]\|'?'<1'\:1
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
@@ -34,8 +32,6 @@ autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/>\| <CR>A
 autocmd FileType vimjournal nnoremap <C-p> yyP:s/.\|.*/>\| <CR>A
 autocmd FileType vimjournal nnoremap <C-t> :call AppendRecord()<CR>A
 autocmd FileType vimjournal inoremap <C-t> <C-R>=strftime("%Y%m%d_%H%M")<CR>
-autocmd FileType vimjournal inoremap <C-x> ✘
-autocmd FileType vimjournal inoremap <C-z> ✔
 autocmd FileType vimjournal inoremap <TAB> <C-P>
 autocmd FileType vimjournal inoremap <S-TAB> <C-N>
 
@@ -45,7 +41,38 @@ autocmd FileType vimjournal setl completeopt=                    " disable autoc
 autocmd FileType vimjournal setl iskeyword+=@-@,/,#,=,!,>,:,-    " include tag symbols in autocomplete
 autocmd FileType vimjournal setl iskeyword-=_                    " word navigation inside timestamps
 
-" jump to the end of the file when first loaded
+" syntax definition use *.log because using `FileType vimjournal` requires a separate file in .vim/syntax
+autocmd BufRead *.log syn keyword Bar │ contained
+autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|" contained
+autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][> ]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][x1]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-2]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$" contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Heading "^==[^ ].*$"
+autocmd BufRead *.log syn match Heading "^## .*$"
+autocmd BufRead *.log syn match Comments "^//.*$"
+autocmd BufRead *.log syn match Comments " // .*$"
+
+" space then a tag character followed by a non-space, another tag or the end of line
+autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*" contained
+
+autocmd FileType vimjournal hi Bar ctermfg=darkgrey
+autocmd FileType vimjournal hi Date ctermfg=darkgrey
+autocmd FileType vimjournal hi Tags ctermfg=darkgrey
+autocmd FileType vimjournal hi NoStars ctermfg=darkgrey
+autocmd FileType vimjournal hi OneStar ctermfg=darkgrey
+autocmd FileType vimjournal hi TwoStar ctermfg=lightgrey
+autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
+autocmd FileType vimjournal hi FourStar ctermfg=cyan
+autocmd FileType vimjournal hi FiveStar ctermfg=white
+autocmd FileType vimjournal hi Heading ctermfg=white
+autocmd FileType vimjournal hi Comments ctermfg=lightgreen
+autocmd FileType vimjournal hi Reference ctermfg=lightyellow
+autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=darkgrey
+
+" jump to the end of the journal when first loaded
 function JumpEnd()
   if !exists("b:vimjournal_jumped")
     normal Gzm
@@ -55,13 +82,22 @@ function JumpEnd()
 endfunction
 autocmd BufWinEnter *.log call JumpEnd()
 
-" open a new record without unfolding existing records
+" open a new record at the end of the journal without unfolding existing records
 function AppendRecord()
   call setreg("t", strftime("%Y%m%d_%H%M >| \n"))
   normal G"tp
 endfunction
 
-" opens the quickfix list in a tab with no formatting
+" filter the current file using a regexp and display the results in a separate tab
+" if no regexp is supplied, the last search pattern is used
+function GrepJournals(regexp, files)
+  execute 'vimgrep /'.a:regexp.'/j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
+
+" display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
   if !exists("g:vimjournal_copened")
     $tab copen
@@ -75,20 +111,9 @@ function DisplayVimjournalQuickfixTab()
     $tabnext
     normal 1G
   endif
-
-  " hide the quickfix metadata
   syn match metadata /^.*|[0-9]\+ col [-0-9]\+| / transparent conceal
 endfunction
 autocmd FileType vimjournal hi QuickFixLine ctermbg=None
-
-" filter the current file using a regexp and display the results in a separate tab
-" if no regexp is supplied, the last search pattern is used
-function GrepJournals(regexp, files)
-  execute 'vimgrep /'.a:regexp.'/j '.a:files
-  call DisplayVimjournalQuickfixTab()
-endfunction
-autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
 
 " sort the quickfix list by stars and update the view
 function SortByStars()
@@ -107,47 +132,7 @@ function ToStars(char)
   else return 0 | endif
 endfunction
 
-"
-" syntax definitions: uses *.log because they don't work with `FileType vimjournal`
-" unless you create a separate file in .vim/syntax, which makes installation more screwy
-"
-
-" space then a tag character followed by a non-space, another tag or the end of line
-autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*" contained
-
-autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][> ]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][x1]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-2]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match Heading "^==[^ ].*$"
-autocmd BufRead *.log syn match Heading "^## .*$"
-autocmd BufRead *.log syn match Comments "^//.*$"
-autocmd BufRead *.log syn match Comments " // .*$"
-
-autocmd FileType vimjournal hi Bar ctermfg=darkgrey
-autocmd FileType vimjournal hi Date ctermfg=darkgrey
-autocmd FileType vimjournal hi Tags ctermfg=darkgrey
-autocmd FileType vimjournal hi NoStars ctermfg=darkgrey
-autocmd FileType vimjournal hi OneStar ctermfg=darkgrey
-autocmd FileType vimjournal hi TwoStar ctermfg=lightgrey
-autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
-autocmd FileType vimjournal hi FourStar ctermfg=cyan
-autocmd FileType vimjournal hi FiveStar ctermfg=white
-autocmd FileType vimjournal hi Heading ctermfg=white
-autocmd FileType vimjournal hi Comments ctermfg=lightgreen
-autocmd FileType vimjournal hi Reference ctermfg=lightyellow
-autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=darkgrey
-
-"
-" functions to find anacronisms
-"
-" forward search is mapped to <C-n>
-" reverse search is mapped to <C-h>
-"
+" find anacronisms: <C-n> for forward search
 function FindNextAnac()
   while line(".") != line("$")
     if getline(".")[0:12] > getline(line(".") + 1)[0:12]
@@ -158,6 +143,7 @@ function FindNextAnac()
 endfunction
 autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
 
+" find anacronisms: <C-h> for reverse search
 function FindLastAnac()
   while line(".") != 1
     let current = getline(".")
@@ -169,10 +155,7 @@ function FindLastAnac()
 endfunction
 autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
 
-"
-" Scroll the screen when changing the wrap mode so that the selected line
-" doesn't jump. Note: requires 'smoothscroll' (vim 9).
-"
+" keep the screen fixed on the selected line when changing the wrap mode
 function ToggleWrap()
   let original_row = winline()
   setl invwrap
