@@ -19,7 +19,7 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
 " presentation and code folding
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
-autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=>\ 
+autocmd FileType vimjournal setl nowrap smoothscroll linebreak breakindent showbreak=>\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart-1) fillchars=fold:\ 
 autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(15)==124?'0'\:1
 
@@ -28,7 +28,7 @@ autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)->strgetchar(15)==124?
 
 " keyboard shortcuts
 autocmd FileType vimjournal nnoremap <TAB> za
-autocmd FileType vimjournal nnoremap <S-TAB> :set invwrap<CR>
+autocmd FileType vimjournal nnoremap <S-TAB> :call ToggleWrap()<CR>
 autocmd FileType vimjournal nnoremap <C-l> :Explore<CR>
 autocmd FileType vimjournal nnoremap <C-o> yyp:s/.\|.*/>\| <CR>A
 autocmd FileType vimjournal nnoremap <C-p> yyP:s/.\|.*/>\| <CR>A
@@ -150,87 +150,18 @@ function FindLastAnac()
 endfunction
 autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
 
-" keep the screen still when toggling wrap
-" credit: Vivian De Smedt
-" https://vi.stackexchange.com/questions/43083/can-you-prevent-then-screen-jumping-when-toggling-the-wrap-option
-function GetWinWidth()
-  let ret = winwidth(0)
-
-  if &signcolumn !=# 'no'
-    let ret = ret - 2
-  endif
-
-  if &number
-    let ret = ret - max([&numberwidth, float2nr(log10(line('$'))) + 2])
-  endif
-
-  return ret
-endfunction
-
-function WrapRowDelta(line1, line2)
-  " This is an approximation that could be improved :-)
-  let ret = 0
-  let max_width = GetWinWidth()
-  for i in range(a:line1, a:line2 - 1)
-    if foldclosed(i) < 0
-      let ret = ret + float2nr(ceil(str2float(len(getline(i)) + 1) / max_width))
-    elseif foldclosed(i) == i
-      let ret = ret + 1
-    endif
-  endfor
-  return ret
-endfunction
-
-function! NoWrapRowDelta(line1, line2)
-  " return a:line2 - a:line1
-  let ret = 0
-  for i in range(a:line1, a:line2 - 1)
-    if foldclosed(i) < 0
-      let ret = ret + 1
-    elseif foldclosed(i) == i
-      let ret = ret + 1
-    endif
-  endfor
-  return ret
-endfunction
-
-function! CorrectCursorScroll()
-  if &wrap
-    " Estimation of the previous space:
-    let nonwrap_row_delta = NoWrapRowDelta(line('w0'), line('.'))
-
-    " Value of the current space
-    let wrap_row_delta = screenpos(0, line('.'), col('.')).row - 1
-    while wrap_row_delta > nonwrap_row_delta
-      exe "normal! \<C-e>"
-      let r = screenpos(0, line('.'), col('.')).row - 1
-      if wrap_row_delta == r
-        break
-      endif
-      let wrap_row_delta = r
-    endwhile
-    if wrap_row_delta < nonwrap_row_delta
-      exe "normal! \<C-y>"
-    endif
-  else
-    " Estimation of the previous space:
-    let wrap_row_delta = WrapRowDelta(line('w0'), line('.'))
-
-    " Value of the current space
-    let nonwrap_row_delta = NoWrapRowDelta(line('w0'), line('.'))
-    while wrap_row_delta > nonwrap_row_delta
-      exe "normal! \<C-y>"
-      let r = NoWrapRowDelta(line('w0'), line('.'))
-      if nonwrap_row_delta == r
-        break
-      endif
-      let nonwrap_row_delta = r
-    endwhile
-    if wrap_row_delta < nonwrap_row_delta
-      exe "normal! \<C-e>"
-    endif
+"
+" Scroll the screen when changing the wrap mode so that the selected line
+" doesn't jump. Note: requires 'smoothscroll' (vim 9).
+"
+function ToggleWrap()
+  let original_row = winline()
+  setl invwrap
+  let offset = winline() - original_row
+  if offset > 0
+    execute "normal ".offset."\<C-e>"
+  elseif offset < 0
+    execute "normal ".(-1 * offset)."\<C-y>"
   endif
 endfunction
-
-autocmd! OptionSet wrap call CorrectCursorScroll()
 
