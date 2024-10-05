@@ -90,6 +90,23 @@ endfunction
 autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
 
+" sort the quickfix list by stars and update the view
+function SortByStars()
+  call setqflist(sort(getqflist(), { x, y -> y.text[14]->ToStars() - x.text[14]->ToStars() }))
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! Stars call SortByStars()
+
+" convert a text character to the number of stars represented by that character
+function ToStars(char)
+  if a:char == '*' || a:char == '5' | return 5
+  elseif a:char == '+' || a:char == '4' | return 4
+  elseif a:char == '=' || a:char == '3' | return 3
+  elseif a:char == '-' || a:char == '2' | return 2
+  elseif a:char == 'x' || a:char == '1' | return 1
+  else return 0 | endif
+endfunction
+
 "
 " syntax definitions: uses *.log because they don't work with `FileType vimjournal`
 " unless you create a separate file in .vim/syntax, which makes installation more screwy
