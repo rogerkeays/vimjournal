@@ -89,12 +89,18 @@ endfunction
 
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
-function GrepJournals(regexp, files)
+function GrepJournalHeaders(regexp, files)
   execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! -nargs=? Filter call GrepJournals(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? Find call GrepJournals(<f-args>, '*.log')
+function GrepJournals(regexp, files)
+  execute 'vimgrep `'.a:regexp.'`j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! -nargs=? Filter call GrepJournalHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? FilterX call GrepJournalHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? Find call GrepJournalHeaders(<f-args>, '*.log')
+autocmd FileType vimjournal command! -nargs=? FindX call GrepJournals(<f-args>, '*.log')
 
 " display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
