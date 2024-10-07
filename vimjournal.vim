@@ -42,20 +42,20 @@ autocmd FileType vimjournal setl iskeyword-=_                    " word navigati
 
 " syntax definition use *.log because using `FileType vimjournal` requires a separate file in .vim/syntax
 autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|" contained
-autocmd BufRead *.log syn match NoStars "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][> ]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][x1]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-2]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar "^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$" contains=Bar,Date,Tags
-autocmd BufRead *.log syn match Heading "^==[^ ].*$"
-autocmd BufRead *.log syn match Heading "^## .*$"
-autocmd BufRead *.log syn match Comments "^//.*$"
-autocmd BufRead *.log syn match Comments " // .*$"
+autocmd BufRead *.log syn match Date `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|` contained
+autocmd BufRead *.log syn match NoStars `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][> ]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][x1]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][-2]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Heading `^==[^ ].*$`
+autocmd BufRead *.log syn match Heading `^## .*$`
+autocmd BufRead *.log syn match Comments `^//.*$`
+autocmd BufRead *.log syn match Comments ` // .*$`
 
 " space then a tag character followed by a non-space, another tag or the end of line
-autocmd BufRead *.log syn match Tags " [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*" contained
+autocmd BufRead *.log syn match Tags ` [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*` contained
 
 autocmd FileType vimjournal hi Bar ctermfg=darkgrey
 autocmd FileType vimjournal hi Date ctermfg=darkgrey
