@@ -172,7 +172,7 @@ function SortByStars()
   call setqflist(sort(getqflist(), { x, y -> y.text[14]->ToStars() - x.text[14]->ToStars() }))
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! Stars call SortByStars()
+autocmd FileType vimjournal command! StarSort call SortByStars()
 
 " convert a text character to the number of stars represented by that character
 function ToStars(char)
@@ -182,5 +182,17 @@ function ToStars(char)
   elseif a:char == '-' || a:char == '2' | return 2
   elseif a:char == 'x' || a:char == '1' | return 1
   else | return 0 | endif
+endfunction
+
+" sort the quickfix list by reference tags and update the view
+function SortByRef()
+  call setqflist(sort(getqflist(), { x, y -> y.text->GetRef() < x.text->GetRef() }))
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! RefSort call SortByRef()
+
+" extract the first reference tag starting with a :
+function GetRef(text)
+  return a:text->matchstr(" :[^ ]\\+")
 endfunction
 
