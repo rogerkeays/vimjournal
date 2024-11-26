@@ -89,18 +89,30 @@ endfunction
 
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
-function GrepJournalHeaders(regexp, files)
-  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
-  call DisplayVimjournalQuickfixTab()
-endfunction
 function GrepJournals(regexp, files)
   execute 'vimgrep `'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
+function GrepJournalHeaders(regexp, files)
+  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
+function GrepJournalVerbs(regexp, files)
+  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].| [^ ].*'.a:regexp.'`j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
+function GrepJournalNouns(regexp, files)
+  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|  .*'.a:regexp.'`j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
 autocmd FileType vimjournal command! -nargs=? Filter call GrepJournalHeaders(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? FilterX call GrepJournalHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? FilterX call GrepJournal(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? FilterVerbs call GrepJournalVerbs(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? FilterNouns call GrepJournalNouns(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? Find call GrepJournalHeaders(<f-args>, '*.log')
 autocmd FileType vimjournal command! -nargs=? FindX call GrepJournals(<f-args>, '*.log')
+autocmd FileType vimjournal command! -nargs=? FindVerbs call GrepJournalVerbs(<f-args>, '*.log')
+autocmd FileType vimjournal command! -nargs=? FindNouns call GrepJournalNouns(<f-args>, '*.log')
 
 " display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
