@@ -18,7 +18,7 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
 " presentation and code folding
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
-autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=>\ 
+autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=\\|\ 
 autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart-1) fillchars=fold:\ 
 autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)[15]=='\|'?'0'\:1 " imprecise, but fast
 "autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-x=+*>]\|'?'<1'\:1
