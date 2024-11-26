@@ -87,6 +87,41 @@ function AppendRecord()
   normal G"tp
 endfunction
 
+" keep the screen fixed on the selected line when changing the wrap mode
+function ToggleWrap()
+  let original_row = winline()
+  setl invwrap
+  let offset = winline() - original_row
+  if offset > 0
+    execute "normal ".offset."\<C-e>"
+  elseif offset < 0
+    execute "normal ".(-1 * offset)."\<C-y>"
+  endif
+endfunction
+
+" find anacronisms: <C-h> for reverse search
+function FindLastAnac()
+  while line(".") != 1
+    let current = getline(".")
+    if trim(current) != "" && current[0:12] < getline(line(".") - 1)[0:12]
+      break
+    endif
+    normal k
+  endwhile
+endfunction
+autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
+
+" find anacronisms: <C-n> for forward search
+function FindNextAnac()
+  while line(".") != line("$")
+    if getline(".")[0:12] > getline(line(".") + 1)[0:12]
+      break
+    endif
+    normal j
+  endwhile
+endfunction
+autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
+
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
 function GrepJournals(regexp, files)
@@ -147,40 +182,5 @@ function ToStars(char)
   elseif a:char == '-' || a:char == '2' | return 2
   elseif a:char == 'x' || a:char == '1' | return 1
   else | return 0 | endif
-endfunction
-
-" find anacronisms: <C-n> for forward search
-function FindNextAnac()
-  while line(".") != line("$")
-    if getline(".")[0:12] > getline(line(".") + 1)[0:12]
-      break
-    endif
-    normal j
-  endwhile
-endfunction
-autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
-
-" find anacronisms: <C-h> for reverse search
-function FindLastAnac()
-  while line(".") != 1
-    let current = getline(".")
-    if trim(current) != "" && current[0:12] < getline(line(".") - 1)[0:12]
-      break
-    endif
-    normal k
-  endwhile
-endfunction
-autocmd FileType vimjournal nnoremap <C-h> :call FindLastAnac()<CR>
-
-" keep the screen fixed on the selected line when changing the wrap mode
-function ToggleWrap()
-  let original_row = winline()
-  setl invwrap
-  let offset = winline() - original_row
-  if offset > 0
-    execute "normal ".offset."\<C-e>"
-  elseif offset < 0
-    execute "normal ".(-1 * offset)."\<C-y>"
-  endif
 endfunction
 
