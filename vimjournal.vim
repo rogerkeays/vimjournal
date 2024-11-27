@@ -144,10 +144,10 @@ autocmd FileType vimjournal command! -nargs=? Filter call GrepJournalHeaders(<f-
 autocmd FileType vimjournal command! -nargs=? FilterX call GrepJournal(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? FilterVerbs call GrepJournalVerbs(<f-args>, '%')
 autocmd FileType vimjournal command! -nargs=? FilterNouns call GrepJournalNouns(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? Find call GrepJournalHeaders(<f-args>, '*.log')
-autocmd FileType vimjournal command! -nargs=? FindX call GrepJournals(<f-args>, '*.log')
-autocmd FileType vimjournal command! -nargs=? FindVerbs call GrepJournalVerbs(<f-args>, '*.log')
-autocmd FileType vimjournal command! -nargs=? FindNouns call GrepJournalNouns(<f-args>, '*.log')
+autocmd FileType vimjournal command! -nargs=? Find call GrepJournalHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindX call GrepJournals(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindVerbs call GrepJournalVerbs(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindNouns call GrepJournalNouns(<f-args>, '%:p:h/*.log')
 
 " display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
