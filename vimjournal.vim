@@ -185,6 +185,13 @@ function ToStars(char)
   else | return 0 | endif
 endfunction
 
+" sort the quickfix list by title and update the view
+function SortByTitle()
+  call setqflist(sort(getqflist(), { x, y -> y.text[16:] < x.text[16:] }))
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! TitleSort call SortByTitle()
+
 " sort the quickfix list by reference tags and update the view
 function SortByRef()
   call setqflist(sort(getqflist(), { x, y -> y.text->GetRef() < x.text->GetRef() }))
