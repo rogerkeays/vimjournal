@@ -70,6 +70,7 @@ autocmd FileType vimjournal hi Heading ctermfg=white
 autocmd FileType vimjournal hi Comments ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow
 autocmd FileType vimjournal hi Folded ctermbg=NONE ctermfg=darkgrey
+autocmd FileType vimjournal hi CursorLine ctermbg=234 ctermfg=NONE
 
 " jump to the end of the journal when first loaded
 function JumpEnd()
@@ -124,30 +125,30 @@ autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
 
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
-function GrepJournalHeaders(regexp, files)
+function GrepHeaders(regexp, files)
   execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
-function GrepJournalActions(regexp, files)
-  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].| [^ ].*'.a:regexp.'`j '.a:files
-  call DisplayVimjournalQuickfixTab()
-endfunction
-function GrepJournalSignals(regexp, files)
+function GrepIndentedHeaders(regexp, files)
   execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].|  .*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
-function GrepJournalRecords(regexp, files)
+function GrepOutdentedHeaders(regexp, files)
+  execute 'vimgrep `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ].| [^ ].*'.a:regexp.'`j '.a:files
+  call DisplayVimjournalQuickfixTab()
+endfunction
+function GrepContent(regexp, files)
   execute 'vimgrep `'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! -nargs=? Headers call GrepJournalHeaders(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=? Actions call GrepJournalActions(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=? Signals call GrepJournalSignals(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=? Records call GrepJournalRecords(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=? LHeaders call GrepJournalHeaders(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? LActions call GrepJournalActions(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? LSignals call GrepJournalSignals(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=? LRecords call GrepJournalRecords(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? Find call GrepHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindIndented call GrepIndentedHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindOutdented call GrepOutdentedHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? FindContent call GrepContent(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=? LFind call GrepHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? LFindIndented call GrepIndentedHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? LFindOutdented call GrepOutdentedHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=? LFindContent call GrepContent(<f-args>, '%')
 
 " display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
