@@ -14,6 +14,7 @@ val usage = """
 usage: vimjournal.kt [command] [parameters]
 
 commands:
+  convert-durations
   format
   filter-from <seq> 
   filter-rating <string>
@@ -36,6 +37,7 @@ commands:
 
 fun main(args: Array<String>) {
     when (if (args.isNotEmpty()) args[0] else "") {
+        "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
@@ -631,6 +633,34 @@ fun Record.sortTags(): Record {
     })
 }
 val sortTagsOrder = "/+#!=>@:&"
+
+fun Record_convertDurationToStopTime_spec() {
+    Record("20250103_1600").convertDurationToStopTime() returns Record("20250103_1600")
+    Record("20250103_1600", tags=listOf("@brisbane")).convertDurationToStopTime() returns
+        Record("20250103_1600", tags=listOf("@brisbane"))
+    Record("20250103_1600", tags=listOf("+15")).convertDurationToStopTime() returns
+        Record("20250103_1600", tags=listOf("+1615"))
+    Record("20250103_2300", tags=listOf("+75")).convertDurationToStopTime() returns
+        Record("20250103_2300", tags=listOf("+0015"))
+    Record("20250103_1600", tags=listOf("+1615")).convertDurationToStopTime() returns
+        Record("20250103_1600", tags=listOf("+1615"))
+    Record("20250103_XXXX", tags=listOf("+15")).convertDurationToStopTime() returns
+        Record("20250103_XXXX", tags=listOf("+15"))
+}
+fun Record.convertDurationToStopTime(): Record {
+    val durationTag = tags.filter { it.matches(convertDurationRegex) }.lastOrNull()
+    if (durationTag == null || !this.isExact()) return this
+    return this.copy(tags = tags.map {
+        if (it.matches(convertDurationRegex)) {
+            this.getDateTime().plusMinutes(durationTag.substring(1).toLong())
+                .format(stopTimeFormat)
+        } else {
+            it
+        }
+    })
+}
+val convertDurationRegex = Regex("(\\+[0-9][0-9]?[0-9]?)") // three digits or less
+val stopTimeFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
