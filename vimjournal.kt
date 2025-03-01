@@ -20,6 +20,7 @@ commands:
   filter-rating <string>
   filter-summary <string>
   filter-tagged <string>
+  find-anachronisms
   make-flashcards
   make-text-flashcards
   show-durations 
@@ -36,6 +37,7 @@ commands:
 """
 
 fun main(args: Array<String>) {
+    System.setProperty("java.util.Arrays.useLegacyMergeSort", "true")
     when (if (args.isNotEmpty()) args[0] else "") {
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
@@ -45,12 +47,19 @@ fun main(args: Array<String>) {
         "filter-tagged" -> parse().filter { record ->
             record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
         }.forEach { it.print() }
+        "find-anachronisms" -> { 
+            var prev = ZEROS
+            parse().forEach { 
+                if (it.fullSeq < prev) println("${it.seq} (${it.fullSeq} < ${prev}) ${it.summary}")
+                prev = it.fullSeq 
+            }
+        }
         "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
         "make-text-flashcards" -> parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
-        "sort" -> parse().sortedBy { it.seq }.forEach { it.print() }
+        "sort" -> parse().sortedBy { it.fullSeq }.forEach { it.print() }
         "sort-rough" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
@@ -66,13 +75,15 @@ fun main(args: Array<String>) {
 }
 
 data class Record(
-    val seq: String,
-    val summary: String = "",
-    val rating: String = ">",
-    val tags: List<String> = listOf(),
-    val body: String = "",
-    val marker: Char = ' ') {
+        val seq: String,
+        val summary: String = "",
+        val rating: String = ">",
+        val tags: List<String> = listOf(),
+        val body: String = "",
+        val marker: Char = ' ',
+        val filler: String = ZEROS) {
 
+    val fullSeq = seq.fill(filler)
     val priority = when (rating) {
         "*" -> 1
         "+" -> 2
@@ -84,6 +95,7 @@ data class Record(
         else -> 6
     }
 }
+val ZEROS = "00000000_0000"
 
 fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX >|"
@@ -103,27 +115,6 @@ fun Record.format() = buildString {
     if (!body.isBlank()) append("\n\n").append(body).append('\n')
 }
 fun Record.print() = println(format())
-
-// sort only on numeric values, so we can mix exact and approximate date/times
-fun Record_compareTo_spec() {
-    Record("19990101_0000").compareTo(Record("19990101_0000")) returns 0
-    Record("19990101_0000").compareTo(Record("19990101_XXXX")) returns 0
-    Record("19990101_1200").compareTo(Record("19990101_XXXX")) returns 0
-    Record("19990101_XXXX").compareTo(Record("19990101_0000")) returns 0
-    Record("19990101_AAAA").compareTo(Record("19990101_0000")) returns 0
-    Record("19990101_XXXX").compareTo(Record("19990101_1200")) returns 0
-    Record("19990101_XXXX").compareTo(Record("19990101_XXXX")) returns 0
-    Record("19990101_0000").compareTo(Record("19990101_0001")) returns -1
-    Record("19990101_0000").compareTo(Record("19990102_0000")) returns -1
-    Record("19990102_0000").compareTo(Record("19990101_0000")) returns 1
-    Record("19990101_0001").compareTo(Record("19990101_0000")) returns 1
-}
-fun Record.compareTo(other: Record): Int {
-    val stop = minOf(seqStopRegex.find(this.seq)?.range?.start ?: this.seq.length,
-                     seqStopRegex.find(other.seq)?.range?.start ?: this.seq.length)
-    return this.seq.take(stop).compareTo(other.seq.take(stop))
-}
-val seqStopRegex = Regex("[A-Za-z]")
 
 fun String_isHeader_spec() {
     "00000000_0000 >|".isHeader() returns true
@@ -145,7 +136,7 @@ fun String_isHeader_spec() {
 fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = " !"
 val ratingChars = "->x=~+*."
-val headerRegex = Regex("^[0-9A-Z_]{13}[$markerChars][$ratingChars]\\|.*\n?$")
+val headerRegex = Regex("^[0-9A-Z_!]{13}[$markerChars][$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
@@ -205,18 +196,22 @@ fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX!>| hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world", marker='!')
     "XXXXXXXX_XXXX!>|  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world", marker='!')
 }
-fun String.parseRecord() = parseRecord("")
-fun String.parseRecord(body: String): Record {
+fun String.parseRecord(body: String = ""): Record {
     val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
-    return Record(
-        seq = slice(0..12),
+    val seq = slice(0..12)
+    val record = Record(
+        seq = seq,
         marker = get(13),
         summary = slice(17..tagIndex).trimEnd(),
         rating = slice(14..14).trim(),
         tags = drop(tagIndex + 1).parseTags(),
-        body = body
+        body = body,
+        filler = if (seq.compareSeq(lastSeq) == 0) lastSeq else ZEROS
     )
+    lastSeq = record.fullSeq
+    return record
 }
+var lastSeq = ZEROS
 
 fun String_parse_spec() {
     "XXXXXXXX_XXXX >| hello world".parse().first().summary returns "hello world"
@@ -661,6 +656,41 @@ fun Record.convertDurationToStopTime(): Record {
 }
 val convertDurationRegex = Regex("(\\+[0-9][0-9]?[0-9]?)") // three digits or less
 val stopTimeFormat = DateTimeFormatter.ofPattern("+HHmm")
+
+fun String_compareSeq_spec() {
+    "19990102_1000".compareSeq("19990102_0999") returns 1
+    "19990102_1000".compareSeq("19990102_1000") returns 0
+    "19990102_1000".compareSeq("19990102_1001") returns -1
+    "19990102_1000".compareSeq("19990101_XXXX") returns 1
+    "19990102_1000".compareSeq("19990102_XXXX") returns 0
+    "19990102_1000".compareSeq("19990103_XXXX") returns -1
+    "19990102_XXXX".compareSeq("19990102_XXXX") returns 0
+    "19990102_XXXX".compareSeq("19990102_XXX1") returns 0
+    "19990102_XXXX".compareSeq("19990102_1000") returns 0
+    "19990102_XXX!".compareSeq("19990102_XXXX") returns 0
+    "19990102_XXXX".compareSeq("19990102_XXX!") returns 0
+    "199701XX_XXXX".compareSeq("1997XXXX_XXXX") returns 0
+}
+fun String.compareSeq(other: String) : Int {
+    val i = this.iterator()
+    val j = other.iterator()
+    while (i.hasNext()) {
+        val a = i.next()
+        val b = j.next()
+        if (a.isLetter() || b.isLetter()) return 0
+        if (a != b) return a.compareTo(b)
+    }
+    return 0
+}
+
+fun String_fill_spec() {
+    "1999XXXX_XXXX".fill("00000000_0000") returns "19990000_0000"
+    "1999XXXX_XXXX".fill("01234567_8901") returns "19994567_8901"
+    "1999XXX9_XX99".fill("01234567_8901") returns "19994569_8999"
+}
+fun String.fill(copyFrom: String) : String {
+    return mapIndexed { i, c -> if (c.isLetter()) copyFrom[i] else c }.joinToString("")
+}
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
