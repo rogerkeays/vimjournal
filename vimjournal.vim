@@ -42,14 +42,14 @@ autocmd FileType vimjournal setl iskeyword-=_                    " word navigati
 
 " syntax definition use *.log because using `FileType vimjournal` requires a separate file in .vim/syntax
 autocmd BufRead *.log syn keyword Bar │ contained
-autocmd BufRead *.log syn match Date `^[0-9X]\{8\}_[0-9X]\{4\}[<! ].|` contained
-autocmd BufRead *.log syn match NoStars `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][> ]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match OneStar `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][x1]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match TwoStar `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][-2]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match ThreeStar `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][=3]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FourStar `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][+4]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match FiveStar `^[0-9X]\{8\}_[0-9X]\{4\}[<! ][*5]|.*$` contains=Bar,Date,Tags
-autocmd BufRead *.log syn match Check `^[0-9X]\{8\}_[0-9X]\{4\}[<! ]!|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Date `^[0-9X]\{8\}_[0-9X]\{4\} .|` contained
+autocmd BufRead *.log syn match NoStars `^[0-9X]\{8\}_[0-9X]\{4\} [> ]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match OneStar `^[0-9X]\{8\}_[0-9X]\{4\} [x1]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match TwoStar `^[0-9X]\{8\}_[0-9X]\{4\} [-2]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match ThreeStar `^[0-9X]\{8\}_[0-9X]\{4\} [=3]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FourStar `^[0-9X]\{8\}_[0-9X]\{4\} [+4]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match FiveStar `^[0-9X]\{8\}_[0-9X]\{4\} [*5]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Check `^[0-9X]\{8\}_[0-9X]\{4\} !|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading `^==[^ ].*$`
 autocmd BufRead *.log syn match Heading `^## .*$`
 autocmd BufRead *.log syn match Comments `^//.*$`
@@ -128,15 +128,15 @@ autocmd FileType vimjournal nnoremap <C-n> :call FindNextAnac()<CR>
 " filter the current file using a regexp and display the results in a separate tab
 " if no regexp is supplied, the last search pattern is used
 function GrepHeaders(regexp, files)
-  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\}[<! ].|.*'.a:regexp.'`j '.a:files
+  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\} .|.*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
 function GrepIndentedHeaders(regexp, files)
-  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\}[<! ].|  .*'.a:regexp.'`j '.a:files
+  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\} .|  .*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
 function GrepOutdentedHeaders(regexp, files)
-  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\}[<! ].| [^ ].*'.a:regexp.'`j '.a:files
+  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\} .| [^ ].*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
 function GrepContent(regexp, files)

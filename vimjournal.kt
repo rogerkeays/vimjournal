@@ -80,7 +80,6 @@ data class Record(
         val rating: String = ">",
         val tags: List<String> = listOf(),
         val body: String = "",
-        val marker: Char = ' ',
         val filler: String = ZEROS) {
 
     val fullSeq = seq.fill(filler)
@@ -104,11 +103,9 @@ fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
     Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
     Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| #foo !bar"
-    Record("XXXXXXXX_XXXX", "hello world", marker='!').format() returns "XXXXXXXX_XXXX!>| hello world"
-    Record("XXXXXXXX_XXXX", " hello world", marker='!').format() returns "XXXXXXXX_XXXX!>|  hello world"
 }
 fun Record.format() = buildString {
-    append(seq).append(marker)
+    append(seq).append(' ')
     append(rating).append('|')
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
@@ -126,7 +123,7 @@ fun String_isHeader_spec() {
     "20210120_2210 >| hello world".isHeader() returns true
     "20210120_2210 >| hello world\n".isHeader() returns true
     "20210120_2210 >| hello world #truth".isHeader() returns true
-    "20210120_2210!>| hello world".isHeader() returns true
+    "20210120_2210!>| hello world".isHeader() returns false
     "20210120_2210>| hello world".isHeader() returns false
     "20210120_2210   hello world".isHeader() returns false
     "202101202210  >| hello world".isHeader() returns false
@@ -134,9 +131,8 @@ fun String_isHeader_spec() {
     "".isHeader() returns false
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
-val markerChars = " !"
 val ratingChars = "->x=~+*.!"
-val headerRegex = Regex("^[0-9X_]{13}[$markerChars][$ratingChars]\\|.*\n?$")
+val headerRegex = Regex("^[0-9X_]{13} [$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
@@ -193,15 +189,12 @@ fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
-    "XXXXXXXX_XXXX!>| hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world", marker='!')
-    "XXXXXXXX_XXXX!>|  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world", marker='!')
 }
 fun String.parseRecord(body: String = ""): Record {
     val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
     val seq = slice(0..12)
     val record = Record(
         seq = seq,
-        marker = get(13),
         summary = slice(17..tagIndex).trimEnd(),
         rating = slice(14..14).trim(),
         tags = drop(tagIndex + 1).parseTags(),
