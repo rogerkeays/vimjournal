@@ -49,6 +49,7 @@ autocmd BufRead *.log syn match TwoStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ]
 autocmd BufRead *.log syn match ThreeStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][=3]|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match FourStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][+4]|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match FiveStar `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][*5]|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Check `^[0-9A-Za-z]\{8\}_[0-9A-Za-z]\{4\}[<! ][!]|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading `^==[^ ].*$`
 autocmd BufRead *.log syn match Heading `^## .*$`
 autocmd BufRead *.log syn match Comments `^//.*$`
@@ -66,6 +67,7 @@ autocmd FileType vimjournal hi TwoStar ctermfg=lightgrey
 autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
 autocmd FileType vimjournal hi FourStar ctermfg=cyan
 autocmd FileType vimjournal hi FiveStar ctermfg=white
+autocmd FileType vimjournal hi Check ctermfg=yellow
 autocmd FileType vimjournal hi Heading ctermfg=white
 autocmd FileType vimjournal hi Comments ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow

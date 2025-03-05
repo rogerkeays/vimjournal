@@ -135,7 +135,7 @@ fun String_isHeader_spec() {
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = " !"
-val ratingChars = "->x=~+*."
+val ratingChars = "->x=~+*.!"
 val headerRegex = Regex("^[0-9A-Z_!]{13}[$markerChars][$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
