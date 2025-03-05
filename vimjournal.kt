@@ -119,7 +119,7 @@ fun Record.print() = println(format())
 fun String_isHeader_spec() {
     "00000000_0000 >|".isHeader() returns true
     "0000XXXX_XXXX >|".isHeader() returns true
-    "0000XXXX_YYYY >|".isHeader() returns true
+    "0000XXXX_YYYY >|".isHeader() returns false
     "20210120_2210 >|".isHeader() returns true
     "20210120_2210 *|".isHeader() returns true
     "20210120_2210 >| ".isHeader() returns true
@@ -136,7 +136,7 @@ fun String_isHeader_spec() {
 fun String.isHeader(): Boolean = matches(headerRegex);
 val markerChars = " !"
 val ratingChars = "->x=~+*.!"
-val headerRegex = Regex("^[0-9A-Z_!]{13}[$markerChars][$ratingChars]\\|.*\n?$")
+val headerRegex = Regex("^[0-9X_]{13}[$markerChars][$ratingChars]\\|.*\n?$")
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
@@ -667,8 +667,6 @@ fun String_compareSeq_spec() {
     "19990102_XXXX".compareSeq("19990102_XXXX") returns 0
     "19990102_XXXX".compareSeq("19990102_XXX1") returns 0
     "19990102_XXXX".compareSeq("19990102_1000") returns 0
-    "19990102_XXX!".compareSeq("19990102_XXXX") returns 0
-    "19990102_XXXX".compareSeq("19990102_XXX!") returns 0
     "199701XX_XXXX".compareSeq("1997XXXX_XXXX") returns 0
 }
 fun String.compareSeq(other: String) : Int {
