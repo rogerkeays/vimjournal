@@ -3,6 +3,7 @@
 import java.io.BufferedReader
 import java.io.File
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit.MINUTES
@@ -22,6 +23,7 @@ commands:
   filter-summary <string>
   filter-tagged <string>
   find-anachronisms
+  find-overlaps
   make-flashcards
   make-text-flashcards
   show-durations 
@@ -51,10 +53,19 @@ fun main(args: Array<String>) {
             record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
         }.forEach { it.print() }
         "find-anachronisms" -> { 
-            var prev = ZERO_SEQ
+            var prevSeq = ZERO_SEQ
             parse().forEach {
-                if (it.exactSeq < prev) println(it.formatHeader())
-                prev = it.exactSeq
+                if (it.exactSeq < prevSeq) println(it.formatHeader())
+                prevSeq = it.exactSeq
+            }
+        }
+
+        // note: doesn't handle skip tags (&)
+        "find-overlaps" -> {
+            var prev = Record(ZERO_SEQ)
+            parse().forEach {
+                if (it.isExact() && it.getExactTime() < prev.getDeclaredStopTime()) println(prev.formatHeader())
+                prev = it
             }
         }
         "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
@@ -96,7 +107,7 @@ data class Record(
         else -> 6
     }
 }
-val ZERO_SEQ = "00000101_0000"
+val ZERO_SEQ = "00010101_0000"
 
 fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
@@ -263,7 +274,32 @@ fun Record_getDateTime_spec() {
     { Record("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
 }
 fun Record.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
+fun Record.getExactTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
+
+fun Record_getDeclaredStopTime_spec() {
+    Record("19990101_0000").getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_XXXX").getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_0100", tags=listOf("+15")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 1, 15)
+    Record("19990101_XXXX", tags=listOf("+15")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 15)
+    Record("19990101_0100", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_XXXX", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_2330", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
+}
+fun Record.getDeclaredStopTime(): LocalDateTime {
+    val exactTime = getExactTime()
+    val durationTag = tags.filter { it.matches(durationRegex) }.lastOrNull()
+    return if (durationTag == null) {
+        exactTime
+    } else if (durationTag.length == 5) {
+        val stopTime = LocalTime.parse(durationTag, stopTimeFormat)
+        val plusDays = if (exactTime.toLocalTime().isAfter(stopTime)) 1L else 0L
+        LocalDateTime.of(exactTime.toLocalDate(), stopTime).plusDays(plusDays)
+    } else {
+        exactTime.plusMinutes(durationTag.substring(1).toLong())
+    }
+}
+val durationRegex = Regex("(\\+[0-9]+)")
 
 fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
@@ -276,12 +312,12 @@ fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTaggedDuration() returns 15
 }
 fun Record.getTaggedDuration(): Int? {
-    val durationTag = tags.filter { it.matches(durationRegex) }.lastOrNull()
+    val durationTag = tags.filter { it.matches(durationOrInstantRegex) }.lastOrNull()
     if (durationTag == null) return null
     if (durationTag.endsWith("!")) return 0
     return durationTag.substring(1).toInt()
 }
-val durationRegex = Regex("(\\+[0-9]+|/.*!)")
+val durationOrInstantRegex = Regex("(\\+[0-9]+|/.*!)")
 
 fun Record_getSkips_spec() {
     Record("XXXXXXXX_XXXX").getSkips() returns 0
