@@ -209,3 +209,6 @@ endfunction
 " execute commands on header lines
 autocmd FileType vimjournal command! -nargs=1 Headers g`^[0-9X]\{8}_[0-9X]\{4} .|`<args>
 
+" delete entries marked with !|
+autocmd FileType vimjournal command! -nargs=0 DeleteChecks g`^[0-9X]\{8}_[0-9X]\{4} !|`d
+
