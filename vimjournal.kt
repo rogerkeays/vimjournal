@@ -48,10 +48,10 @@ fun main(args: Array<String>) {
             record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
         }.forEach { it.print() }
         "find-anachronisms" -> { 
-            var prev = ZEROS
+            var prev = ZERO_SEQ
             parse().forEach {
-                if (it.fullSeq < prev) println(it.formatHeader())
-                prev = it.fullSeq 
+                if (it.exactSeq < prev) println(it.formatHeader())
+                prev = it.exactSeq
             }
         }
         "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
@@ -59,7 +59,7 @@ fun main(args: Array<String>) {
         "show-durations" -> parse().withDurations().forEach {
             println("${it.first.format()} +${it.second}") 
         }
-        "sort" -> parse().sortedBy { it.fullSeq }.forEach { it.print() }
+        "sort" -> parse().sortedBy { it.exactSeq }.forEach { it.print() }
         "sort-rough" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
         "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
         "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
@@ -80,9 +80,8 @@ data class Record(
         val rating: String = ">",
         val tags: List<String> = listOf(),
         val body: String = "",
-        val filler: String = ZEROS) {
+        val exactSeq: String = makeExactSeq(seq)) {
 
-    val fullSeq = seq.fill(filler)
     val priority = when (rating) {
         "*" -> 1
         "+" -> 2
@@ -94,7 +93,7 @@ data class Record(
         else -> 6
     }
 }
-val ZEROS = "00000000_0000"
+val ZERO_SEQ = "00000101_0000"
 
 fun Record_format_spec() {
     Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
@@ -205,12 +204,12 @@ fun String.parseRecord(body: String = ""): Record {
         rating = slice(14..14).trim(),
         tags = drop(tagIndex + 1).parseTags(),
         body = body,
-        filler = if (seq.compareSeq(lastSeq) == 0) lastSeq else ZEROS
+        exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
     )
-    lastSeq = record.fullSeq
+    lastSeq = record.exactSeq
     return record
 }
-var lastSeq = ZEROS
+var lastSeq = ZERO_SEQ
 
 fun String_parse_spec() {
     "XXXXXXXX_XXXX >| hello world".parse().first().summary returns "hello world"
@@ -680,13 +679,12 @@ fun String.compareSeq(other: String) : Int {
     return 0
 }
 
-fun String_fill_spec() {
-    "1999XXXX_XXXX".fill("00000000_0000") returns "19990000_0000"
-    "1999XXXX_XXXX".fill("01234567_8901") returns "19994567_8901"
-    "1999XXX9_XX99".fill("01234567_8901") returns "19994569_8999"
+fun makeExactSeq_spec() {
+    makeExactSeq("1999XXXX_XXXX") returns "19990101_0000"
+    makeExactSeq("1999XXX9_XX99") returns "19990109_0099"
 }
-fun String.fill(copyFrom: String) : String {
-    return mapIndexed { i, c -> if (c.isLetter()) copyFrom[i] else c }.joinToString("")
+fun makeExactSeq(s: String) : String {
+    return s.mapIndexed { i, c -> if (c.isLetter()) ZERO_SEQ[i] else c }.joinToString("")
 }
 
 // simple test functions, since kotlin.test is not on the default classpath
