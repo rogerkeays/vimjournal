@@ -17,6 +17,7 @@ commands:
   convert-durations
   format
   filter-from <seq> 
+  filter-indented
   filter-rating <string>
   filter-summary <string>
   filter-tagged <string>
@@ -42,6 +43,8 @@ fun main(args: Array<String>) {
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
+        "filter-indented" -> parse().filter { it.summary.startsWith(" ") }.forEach { it.print() }
+        "filter-outdented" -> parse().filter { !it.summary.startsWith(" ") }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-tagged" -> parse().filter { record ->
