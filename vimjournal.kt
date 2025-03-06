@@ -49,8 +49,8 @@ fun main(args: Array<String>) {
         }.forEach { it.print() }
         "find-anachronisms" -> { 
             var prev = ZEROS
-            parse().forEach { 
-                if (it.fullSeq < prev) println("${it.seq} (${it.fullSeq} < ${prev}) ${it.summary}")
+            parse().forEach {
+                if (it.fullSeq < prev) println(it.formatHeader())
                 prev = it.fullSeq 
             }
         }
@@ -97,21 +97,27 @@ data class Record(
 val ZEROS = "00000000_0000"
 
 fun Record_format_spec() {
-    Record("XXXXXXXX_XXXX", "").format() returns "XXXXXXXX_XXXX >|"
-    Record("XXXXXXXX_XXXX", "hello world").format() returns "XXXXXXXX_XXXX >| hello world"
-    Record("XXXXXXXX_XXXX", "hello world", rating="+").format() returns "XXXXXXXX_XXXX +| hello world"
-    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
     Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
-    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).format() returns "XXXXXXXX_XXXX >| #foo !bar"
 }
 fun Record.format() = buildString {
+    append(formatHeader())
+    if (!body.isBlank()) append("\n\n").append(body).append('\n')
+}
+fun Record.print() = println(format())
+
+fun Record_formatHeader_spec() {
+    Record("XXXXXXXX_XXXX", "").formatHeader() returns "XXXXXXXX_XXXX >|"
+    Record("XXXXXXXX_XXXX", "hello world").formatHeader() returns "XXXXXXXX_XXXX >| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", rating="+").formatHeader() returns "XXXXXXXX_XXXX +| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
+    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| #foo !bar"
+}
+fun Record.formatHeader() = buildString {
     append(seq).append(' ')
     append(rating).append('|')
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
-    if (!body.isBlank()) append("\n\n").append(body).append('\n')
 }
-fun Record.print() = println(format())
 
 fun String_isHeader_spec() {
     "00000000_0000 >|".isHeader() returns true
