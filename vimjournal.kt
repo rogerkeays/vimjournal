@@ -36,8 +36,9 @@ commands:
   strip-durations
   sum-durations
   sum-durations-by-tag <tag>
-  sum-with-stop-time
+  sum-with-stop-times
   test
+  to-tsv
 
 """
 
@@ -91,8 +92,9 @@ fun main(args: Array<String>) {
         "sum-durations-by-tag" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
-        "sum-with-stop-time" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
+        "sum-with-stop-times" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
         "test" -> test()
+        "to-tsv" -> parse().forEach { println(it.formatHeaderAsTSV()) }
         else -> println(usage)
     }
 }
@@ -139,6 +141,12 @@ fun Record.formatHeader() = buildString {
     append(rating).append('|')
     if (!summary.isBlank()) append(' ').append(summary)
     if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
+}
+fun Record.formatHeaderAsTSV() = buildString {
+    append(seq).append('\t')
+    append(rating).append('\t')
+    if (!summary.isBlank()) append('\t').append(summary)
+    if (!tags.isEmpty()) append(tags.joinToString("\t", "\t"))
 }
 
 fun String_isHeader_spec() {
