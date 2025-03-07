@@ -15,6 +15,7 @@ val usage = """
 usage: vimjournal.kt [command] [parameters]
 
 commands:
+  add-stop-times
   convert-durations
   format
   filter-from <seq> 
@@ -45,6 +46,13 @@ commands:
 fun main(args: Array<String>) {
     System.setProperty("java.util.Arrays.useLegacyMergeSort", "true")
     when (if (args.isNotEmpty()) args[0] else "") {
+        "add-stop-times" -> {
+            var prev = Record(ZERO_SEQ)
+            parse().filter { !it.isIndented() && it.isExact() }.forEach {
+                println(prev.formatHeader() + if (prev.getTaggedDuration() == null) " +${it.seq.drop(9)}" else "")
+                prev = it
+            }
+        }
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
