@@ -36,6 +36,7 @@ commands:
   strip-durations
   sum-durations
   sum-durations-by-tag <tag>
+  sum-with-stop-time
   test
 
 """
@@ -90,6 +91,7 @@ fun main(args: Array<String>) {
         "sum-durations-by-tag" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
+        "sum-with-stop-time" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
         "test" -> test()
         else -> println(usage)
     }
