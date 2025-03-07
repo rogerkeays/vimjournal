@@ -23,6 +23,7 @@ commands:
   filter-summary <string>
   filter-tagged <string>
   find-anachronisms
+  find-missing-stop-times
   find-overlaps
   make-flashcards
   make-text-flashcards
@@ -45,8 +46,8 @@ fun main(args: Array<String>) {
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
         "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
-        "filter-indented" -> parse().filter { it.summary.startsWith(" ") }.forEach { it.print() }
-        "filter-outdented" -> parse().filter { !it.summary.startsWith(" ") }.forEach { it.print() }
+        "filter-indented" -> parse().filter { it.isIndented() }.forEach { it.print() }
+        "filter-outdented" -> parse().filter { !it.isIndented() }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
         "filter-tagged" -> parse().filter { record ->
@@ -59,11 +60,17 @@ fun main(args: Array<String>) {
                 prevSeq = it.exactSeq
             }
         }
-
+        "find-missing-stop-times" -> {
+            var prev = Record(ZERO_SEQ)
+            parse().filter { !it.isIndented() }.forEach {
+                if (prev.isExact() && prev.getTaggedDuration() == null && !it.isExact()) println(prev.formatHeader())
+                prev = it
+            }
+        }
         // note: doesn't handle skip tags (&)
         "find-overlaps" -> {
             var prev = Record(ZERO_SEQ)
-            parse().forEach {
+            parse().filter { !it.isIndented() }.forEach {
                 if (it.isExact() && it.getExactTime() < prev.getDeclaredStopTime()) println(prev.formatHeader())
                 prev = it
             }
@@ -725,6 +732,8 @@ fun makeExactSeq_spec() {
 fun makeExactSeq(s: String) : String {
     return s.mapIndexed { i, c -> if (c.isLetter()) ZERO_SEQ[i] else c }.joinToString("")
 }
+
+fun Record.isIndented(): Boolean = summary.startsWith(" ")
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
