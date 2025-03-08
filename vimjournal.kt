@@ -47,9 +47,15 @@ fun main(args: Array<String>) {
     System.setProperty("java.util.Arrays.useLegacyMergeSort", "true")
     when (if (args.isNotEmpty()) args[0] else "") {
         "add-stop-times" -> {
-            var prev = Record(ZERO_SEQ)
-            parse().filter { !it.isIndented() && it.isExact() }.forEach {
-                println(prev.formatHeader() + if (prev.getTaggedDuration() == null) " +${it.seq.drop(9)}" else "")
+            var prev = Record(ZERO_SEQ, tags=listOf("+0"))
+            parse().filter { it.isForegroundAction() }.forEach {
+                if (!prev.isExact() || prev.getTaggedDuration() != null) {
+                    println(prev.formatHeader())
+                } else if (prev.isExact() && it.isExact()) {
+                    println("${prev.formatHeader()} +${it.seq.drop(9)}")
+                } else {
+                    throw AssertionError("Next record not exact: ${prev.formatHeader()}")
+                }
                 prev = it
             }
         }
@@ -752,6 +758,21 @@ fun makeExactSeq(s: String) : String {
 }
 
 fun Record.isIndented(): Boolean = summary.startsWith(" ")
+fun Record.isBackgroundAction(): Boolean = summary.startsWith("& ") || summary.startsWith("and ")
+fun Record.isForegroundAction(): Boolean = !isIndented() && !isBackgroundAction()
+
+fun Record_isInstant_spec() {
+    Record("20000101_0000").isInstant() returns false
+    Record("20000101_0000", tags=listOf("/run")).isInstant() returns false
+    Record("20000101_0000", tags=listOf("/run", "+45")).isInstant() returns false
+    Record("20000101_0000", tags=listOf("/fail!")).isInstant() returns true
+    Record("20000101_0000", tags=listOf("@office", "/fail!")).isInstant() returns true
+}
+fun Record.isInstant(): Boolean {
+    tags.forEach { if (it.matches(instantRegex)) return true }
+    return false
+}
+val instantRegex = Regex("/.*!")
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
