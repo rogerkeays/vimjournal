@@ -18,11 +18,12 @@ commands:
   add-stop-times
   convert-durations
   format
-  filter-from <seq> 
+  filter-from <seq>         (inclusive)
   filter-indented
   filter-rating <string>
   filter-summary <string>
   filter-tagged <string>
+  filter-to <seq>           (inclusive)
   find-anachronisms
   find-missing-stop-times
   find-overlaps
@@ -62,7 +63,7 @@ fun main(args: Array<String>) {
         }
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
-        "filter-from" -> parse().filter { it.seq > args[1] }.sortedBy { it.seq }.forEach { it.print() }
+        "filter-from" -> parse().filter { it.seq >= args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "filter-indented" -> parse().filter { it.isIndented() }.forEach { it.print() }
         "filter-outdented" -> parse().filter { !it.isIndented() }.forEach { it.print() }
         "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
@@ -70,6 +71,7 @@ fun main(args: Array<String>) {
         "filter-tagged" -> parse().filter { record ->
             record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
         }.forEach { it.print() }
+        "filter-to" -> parse().filter { it.seq <= args[1] }.sortedBy { it.seq }.forEach { it.print() }
         "find-anachronisms" -> { 
             var prevSeq = ZERO_SEQ
             parse().forEach {
