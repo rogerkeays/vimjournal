@@ -58,6 +58,7 @@ fun main(args: Array<String>) {
                 }
                 prev = it
             }
+            println(prev.formatHeader())
         }
         "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
         "format" -> parse().forEach { it.print() }
