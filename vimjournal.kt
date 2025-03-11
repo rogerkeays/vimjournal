@@ -254,7 +254,7 @@ fun String.parseRecord(body: String = ""): Record {
         body = body,
         exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
     )
-    lastSeq = record.exactSeq
+    lastSeq = record.exactSeq // or record.getDeclaredStopTime()?
     return record
 }
 var lastSeq = ZERO_SEQ
