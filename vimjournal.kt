@@ -15,7 +15,7 @@ val usage = """
 usage: vimjournal.kt [command] [parameters]
 
 commands:
-  add-stop-times
+  add-stops
   convert-durations
   format
   filter-from <seq>         (inclusive, assumes records are presorted)
@@ -25,7 +25,7 @@ commands:
   filter-tagged <string>
   filter-to <seq>           (inclusive, assumes records are presorted)
   find-anachronisms
-  find-missing-stop-times
+  find-missing-stops
   find-overlaps
   make-flashcards
   make-text-flashcards
@@ -38,7 +38,7 @@ commands:
   strip-durations
   sum-durations
   sum-durations-by-tag <tag>
-  sum-with-stop-times
+  sum
   test
   to-tsv
 
@@ -47,7 +47,7 @@ commands:
 fun main(args: Array<String>) {
     System.setProperty("java.util.Arrays.useLegacyMergeSort", "true")
     when (if (args.isNotEmpty()) args[0] else "") {
-        "add-stop-times" -> {
+        "add-stops" -> {
             var prev = Record(ZERO_SEQ, tags=listOf("+0"))
             parse().filter { it.isForegroundAction() }.forEach {
                 if (!prev.isExact() || prev.getTaggedDuration() != null) {
@@ -79,7 +79,7 @@ fun main(args: Array<String>) {
                 prevSeq = it.exactSeq
             }
         }
-        "find-missing-stop-times" -> {
+        "find-missing-stops" -> {
             var prev = Record(ZERO_SEQ)
             parse().filter { !it.isIndented() }.forEach {
                 if (prev.isExact() && prev.getTaggedDuration() == null && !it.isExact()) println(prev.formatHeader())
@@ -109,7 +109,7 @@ fun main(args: Array<String>) {
         "sum-durations-by-tag" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
             println(String.format("% 8.2f %s", it.value / 60.0, it.key))
         }
-        "sum-with-stop-times" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
+        "sum" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
         "test" -> test()
         "to-tsv" -> parse().forEach { println(it.formatHeaderAsTSV()) }
         else -> println(usage)
