@@ -41,6 +41,7 @@ commands:
   sum
   test
   to-tsv
+  zip-diff <file1> <file2>
 
 """
 
@@ -112,6 +113,13 @@ fun main(args: Array<String>) {
         "sum" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
         "test" -> test()
         "to-tsv" -> parse().forEach { println(it.formatHeaderAsTSV()) }
+        "zip-diff" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+            if (it.first.getExactTime() != it.second.getExactTime() ||
+                    Math.abs(MINUTES.between(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime())) > 0) {
+                println(it.first.formatHeader())
+                println(it.second.formatHeader())
+            }
+        }
         else -> println(usage)
     }
 }
