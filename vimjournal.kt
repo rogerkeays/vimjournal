@@ -169,16 +169,6 @@ fun main(args: Array<String>) {
     usage.put("to-tsv", "convert records headers to tab separated format")
     if (c == "to-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
 
-    usage.put("zip-fix-times file1 file2", "compare files record by record , patching times from file2 with file1 if they differ by one minute or less")
-    if (c == "zip-fix-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-        if (minutesBetween(it.first.getExactTime(), it.second.getExactTime()) <= 1 ||
-                minutesBetween(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime()) <= 1) {
-            it.second.replaceStop(it.first.formatStop()).copy(seq = it.first.seq).sortTags().print()
-        } else {
-            it.second.print()
-        }
-    }
-
     usage.put("help", "print usage")
     if (c == "help") {
         println("\nUsage: vimjournal.kt [command] [parameters]\n")
