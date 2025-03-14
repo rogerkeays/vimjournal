@@ -136,7 +136,7 @@ fun main(args: Array<String>) {
     usage.put("zip-diff-times file1 file2", "compare files line by line, outputting records where the start or stop time differ")
     if (c == "zip-diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
         if (it.first.getExactTime() != it.second.getExactTime() ||
-                Math.abs(MINUTES.between(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime())) > 0) {
+                it.first.getDeclaredStopTime() != it.second.getDeclaredStopTime()) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -152,8 +152,20 @@ fun main(args: Array<String>) {
         }
     }
 
+    usage.put("zip-fix-times file1 file2", "compare files record by record , patching times from file2 with file1 if they differ by one minute or less")
+    if (c == "zip-fix-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+        if (minutesBetween(it.first.getExactTime(), it.second.getExactTime()) <= 1 ||
+                minutesBetween(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime()) <= 1) {
+            it.second.removeStop().copy(
+                seq = it.first.seq,
+                tags = it.second.tags + it.first.formatStop()).sortTags().print()
+        } else {
+            it.second.print()
+        }
+    }
+
     usage.put("help", "print usage")
-    if (c == "help" || !usage.containsKey(c)) {
+    if (c == "help") {
         println("\nUsage: vimjournal.kt [command] [parameters]\n")
         println("Unless specified, all commands read from stdin and write to stdout.\n")
         usage.forEach { println(String.format("  %-30s %s", it.key, it.value)) }
@@ -823,6 +835,13 @@ fun Record.isInstant(): Boolean {
     return false
 }
 val instantRegex = Regex("/.*!")
+
+fun minutesBetween(a: LocalDateTime, b: LocalDateTime): Long = Math.abs(MINUTES.between(a, b))
+
+fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
+val STOP_REGEX = Regex("(\\+[0-9]{4})")
+
+fun Record.formatStop(): String = stopTimeFormat.format(getDeclaredStopTime())
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
