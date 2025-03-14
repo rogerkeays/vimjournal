@@ -825,12 +825,8 @@ fun Record.isInstant(): Boolean {
 val instantRegex = Regex("/.*!")
 
 // simple test functions, since kotlin.test is not on the default classpath
-fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
-    klass.declaredMethods.filter { it.name.endsWith(suffix) }.forEach { it(null) }
-}
-infix fun Any?.returns(result: Any?) {
-    if (this != result) throw AssertionError("Expected: $result, got $this")
-}
+fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
+infix fun Any?.returns(result: Any?) { if (this != result) throw AssertionError("Expected: $result, got $this") }
 infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) {
     try {
         invoke()
