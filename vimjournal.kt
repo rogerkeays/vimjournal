@@ -116,6 +116,9 @@ fun main(args: Array<String>) {
     usage.put("strip-durations", "remove durations where the gap until the next record is less than ${MIN_GAP_MINUTES} minutes")
     if (c == "strip-durations") parse().stripDurationTags().forEach { it.print() }
 
+    usage.put("strip-stops", "remove stop tags where there is no gap between records")
+    if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
+
     usage.put("sum-durations", "sum the duration in minutes of all records")
     if (c == "sum-durations") println(parse().sumDurations())
 
@@ -706,6 +709,14 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
     }
 }
 val MIN_GAP_MINUTES = 2
+
+fun Sequence<Record>.stripStopTags(): Sequence<Record> = pairs().map { (first, second) ->
+    if (second != null && first.getDeclaredStopTime() == second.getExactTime()) {
+        first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
+    } else {
+        first
+    }
+}
 
 fun String_wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
