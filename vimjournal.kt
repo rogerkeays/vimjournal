@@ -156,9 +156,7 @@ fun main(args: Array<String>) {
     if (c == "zip-fix-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
         if (minutesBetween(it.first.getExactTime(), it.second.getExactTime()) <= 1 ||
                 minutesBetween(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime()) <= 1) {
-            it.second.removeStop().copy(
-                seq = it.first.seq,
-                tags = it.second.tags + it.first.formatStop()).sortTags().print()
+            it.second.replaceStop(it.first.formatStop()).copy(seq = it.first.seq).sortTags().print()
         } else {
             it.second.print()
         }
@@ -839,6 +837,7 @@ val instantRegex = Regex("/.*!")
 fun minutesBetween(a: LocalDateTime, b: LocalDateTime): Long = Math.abs(MINUTES.between(a, b))
 
 fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
+fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
 fun Record.formatStop(): String = stopTimeFormat.format(getDeclaredStopTime())
