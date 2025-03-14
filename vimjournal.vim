@@ -143,14 +143,14 @@ function GrepContent(regexp, files)
   execute 'vimgrep `'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! -nargs=1 Find call GrepHeaders(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=1 FindIndented call GrepIndentedHeaders(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=1 FindOutdented call GrepOutdentedHeaders(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=1 FindContent call GrepContent(<f-args>, '%:p:h/*.log')
-autocmd FileType vimjournal command! -nargs=1 LFind call GrepHeaders(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=1 LFindIndented call GrepIndentedHeaders(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=1 LFindOutdented call GrepOutdentedHeaders(<f-args>, '%')
-autocmd FileType vimjournal command! -nargs=1 LFindContent call GrepContent(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=1 Find call GrepHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=1 FindIndented call GrepIndentedHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=1 FindOutdented call GrepOutdentedHeaders(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=1 FindContent call GrepContent(<f-args>, '%')
+autocmd FileType vimjournal command! -nargs=1 Search call GrepHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=1 SearchIndented call GrepIndentedHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=1 SearchOutdented call GrepOutdentedHeaders(<f-args>, '%:p:h/*.log')
+autocmd FileType vimjournal command! -nargs=1 SearchContent call GrepContent(<f-args>, '%:p:h/*.log')
 
 " display the quickfix list in a tab with no formatting
 function DisplayVimjournalQuickfixTab()
