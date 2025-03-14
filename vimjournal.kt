@@ -8,127 +8,155 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.ChronoUnit.MINUTES
 import java.util.LinkedList
+import java.util.LinkedHashMap
 import java.util.NoSuchElementException
 
-val usage = """
-
-usage: vimjournal.kt [command] [parameters]
-
-commands:
-  add-stops
-  convert-durations
-  format
-  filter-from <seq>         (inclusive, assumes records are presorted)
-  filter-indented
-  filter-rating <string>
-  filter-summary <string>
-  filter-tagged <string>
-  filter-to <seq>           (inclusive, assumes records are presorted)
-  find-anachronisms
-  find-missing-stops
-  find-overlaps
-  make-flashcards
-  make-text-flashcards
-  show-durations 
-  sort
-  sort-rough
-  sort-by-summary 
-  sort-by-rating
-  sort-tags
-  strip-durations
-  sum-durations
-  sum-durations-by-tag <tag>
-  sum
-  test
-  to-tsv
-  zip-diff <file1> <file2>
-
-"""
-
 fun main(args: Array<String>) {
-    System.setProperty("java.util.Arrays.useLegacyMergeSort", "true")
-    when (if (args.isNotEmpty()) args[0] else "") {
-        "add-stops" -> {
-            var prev = Record(ZERO_SEQ, tags=listOf("+0"))
-            parse().filter { it.isForegroundAction() }.forEach {
-                if (!prev.isExact() || prev.getTaggedDuration() != null) {
-                    println(prev.formatHeader())
-                } else if (prev.isExact() && it.isExact()) {
-                    println("${prev.formatHeader()} +${it.seq.drop(9)}")
-                } else {
-                    throw AssertionError("Next record not exact: ${prev.formatHeader()}")
-                }
-                prev = it
+    val usage = LinkedHashMap<String, String>()
+    val c = if (args.isNotEmpty()) args[0] else "help"
+
+    usage.put("add-stops", "add missing stop times from sequential records")
+    if (c == "add-stops") {
+        var prev = Record(ZERO_SEQ, tags=listOf("+0"))
+        parse().filter { it.isForegroundAction() }.forEach {
+            if (!prev.isExact() || prev.getTaggedDuration() != null) {
+                println(prev.formatHeader())
+            } else if (prev.isExact() && it.isExact()) {
+                println("${prev.formatHeader()} +${it.seq.drop(9)}")
+            } else {
+                throw AssertionError("Next record not exact: ${prev.formatHeader()}")
             }
-            println(prev.formatHeader())
+            prev = it
         }
-        "convert-durations" -> parse().forEach { it.convertDurationToStopTime().print() }
-        "format" -> parse().forEach { it.print() }
-        "filter-from" -> parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
-        "filter-indented" -> parse().filter { it.isIndented() }.forEach { it.print() }
-        "filter-outdented" -> parse().filter { !it.isIndented() }.forEach { it.print() }
-        "filter-rating" -> parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
-        "filter-summary" -> parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
-        "filter-tagged" -> parse().filter { record ->
-            record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
-        }.forEach { it.print() }
-        "filter-to" -> parse().takeWhile { it.exactSeq <= args[1] }.forEach { it.print() }
-        "find-anachronisms" -> { 
-            var prevSeq = ZERO_SEQ
-            parse().forEach {
-                if (it.exactSeq < prevSeq) println(it.formatHeader())
-                prevSeq = it.exactSeq
-            }
+        println(prev.formatHeader())
+    }
+
+    usage.put("convert-durations", "convert durations to stop time")
+    if (c == "convert-durations") parse().forEach { it.convertDurationToStopTime().print() }
+
+    usage.put("format", "output records with standard formatting (does not sort tags)")
+    if (c == "format") parse().forEach { it.print() }
+
+    usage.put("filter-from seq", "output records after `seq`, inclusive (presumes input is presorted)")
+    if (c == "filter-from") parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
+
+    usage.put("filter-indented", "output records whose summary begins with a space character")
+    if (c == "filter-indented") parse().filter { it.isIndented() }.forEach { it.print() }
+
+    usage.put("filter-outdented", "output records whose summary does not begin with a space character")
+    if (c == "filter-outdented") parse().filter { !it.isIndented() }.forEach { it.print() }
+
+    usage.put("filter-rating regex", "output records whose rating matches `regex`")
+    if (c == "filter-rating") parse().filter { it.rating.contains(Regex(args[1])) }.forEach { it.print() }
+
+    usage.put("filter-summary regex", "output records whose summary matches `regex`")
+    if (c == "filter-summary") parse().filter { it.summary.contains(Regex(args[1])) }.forEach { it.print() }
+
+    usage.put("filter-tagged regex", "output records with a tag matching `regex`")
+    if (c == "filter-tagged") parse().filter { record ->
+        record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
+    }.forEach { it.print() }
+
+    usage.put("filter-to seq", "output records before `seq`, inclusive (presumes input is presorted)")
+    if (c == "filter-to") parse().takeWhile { it.exactSeq <= args[1] }.forEach { it.print() }
+
+    usage.put("find-anachronisms", "find records which are out of order")
+    if (c == "find-anachronisms") {
+        var prevSeq = ZERO_SEQ
+        parse().forEach {
+            if (it.exactSeq < prevSeq) println(it.formatHeader())
+            prevSeq = it.exactSeq
         }
-        "find-missing-stops" -> {
-            var prev = Record(ZERO_SEQ)
-            parse().filter { !it.isIndented() }.forEach {
-                if (prev.isExact() && prev.getTaggedDuration() == null && !it.isExact()) println(prev.formatHeader())
-                prev = it
-            }
+    }
+
+    usage.put("find-missing-stops", "output records which are missing a stop tag because the next record seq is approximate")
+    if (c == "find-missing-stops") {
+        var prev = Record(ZERO_SEQ)
+        parse().filter { !it.isIndented() }.forEach {
+            if (prev.isExact() && prev.getTaggedDuration() == null && !it.isExact()) println(prev.formatHeader())
+            prev = it
         }
-        // note: doesn't handle skip tags (&)
-        "find-overlaps" -> {
-            var prev = Record(ZERO_SEQ)
-            parse().filter { !it.isIndented() }.forEach {
-                if (it.isExact() && it.getExactTime() < prev.getDeclaredStopTime()) println(prev.formatHeader())
-                prev = it
-            }
+    }
+
+    usage.put("find-overlaps", "output records whose stop time overlaps the next records start time")
+    if (c == "find-overlaps") {
+        var prev = Record(ZERO_SEQ)
+        parse().filter { !it.isIndented() }.forEach {
+            if (it.isExact() && it.getExactTime() < prev.getDeclaredStopTime()) println(prev.formatHeader())
+            prev = it
         }
-        "make-flashcards" -> parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
-        "make-text-flashcards" -> parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
-        "show-durations" -> parse().withDurations().forEach {
-            println("${it.first.format()} +${it.second}") 
+    }
+
+    usage.put("make-flashcards", "export records as png flashcards for nokia phones (requires ImageMagick, writes files to current dir)")
+    if (c == "make-flashcards") parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
+
+    usage.put("make-text-flashcards", "export records as text flashcards for nokia phones (writes files to current dir)")
+    if (c == "make-text-flashcards") parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
+
+    usage.put("show-durations", "append the duration of each record")
+    if (c == "show-durations") parse().withDurations().forEach {
+        println("${it.first.format()} +${it.second}")
+    }
+
+    usage.put("sort", "sort records by seq: approximate seqs are stable")
+    if (c == "sort") parse().sortedBy { it.exactSeq }.forEach { it.print() }
+
+    usage.put("sort-rough", "sort records by first eight characters of the record seq (day)")
+    if (c == "sort-rough") parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
+
+    usage.put("sort-by-summary", "sort records by summary")
+    if (c == "sort-by-summary") parse().sortedBy { it.summary }.forEach { it.print() }
+
+    usage.put("sort-by-rating", "sort records by rating")
+    if (c == "sort-by-rating") parse().sortedBy { it.priority }.forEach { it.print() }
+
+    usage.put("sort-tags", "sort record tags in the following order: ${sortTagsOrder}")
+    if (c == "sort-tags") parse().forEach { it.sortTags().print() }
+
+    usage.put("strip-durations", "remove durations where the gap until the next record is less than ${MIN_GAP_MINUTES} minutes")
+    if (c == "strip-durations") parse().stripDurationTags().forEach { it.print() }
+
+    usage.put("sum-durations", "sum the duration in minutes of all records")
+    if (c == "sum-durations") println(parse().sumDurations())
+
+    usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
+    if (c == "sum-durations-by-tag") parse().sumDurationsByTagFor(args[1]).entries.forEach {
+        println(String.format("% 8.2f %s", it.value / 60.0, it.key))
+    }
+
+    usage.put("sum", "sum the duration in minutes of all records (stop times must be appended first)")
+    if (c == "sum") println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
+
+    usage.put("test", "run unit tests and output any failures")
+    if (c == "test") test()
+
+    usage.put("to-tsv", "convert records headers to tab separated format")
+    if (c == "to-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
+
+    usage.put("zip-diff-times file1 file2", "compare files line by line, outputting records where the start or stop time differ")
+    if (c == "zip-diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+        if (it.first.getExactTime() != it.second.getExactTime() ||
+                Math.abs(MINUTES.between(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime())) > 0) {
+            println(it.first.formatHeader())
+            println(it.second.formatHeader())
+            println()
         }
-        "sort" -> parse().sortedBy { it.exactSeq }.forEach { it.print() }
-        "sort-rough" -> parse().sortedBy { it.seq.take(8) }.forEach { it.print() }
-        "sort-by-summary" -> parse().sortedBy { it.summary }.forEach { it.print() }
-        "sort-by-rating" -> parse().sortedBy { it.priority }.forEach { it.print() }
-        "sort-tags" -> parse().forEach { it.sortTags().print() }
-        "strip-durations" -> parse().stripDurationTags().forEach { it.print() }
-        "sum-durations" -> println(parse().sumDurations())
-        "sum-durations-by-tag" -> parse().sumDurationsByTagFor(args[1]).entries.forEach {
-            println(String.format("% 8.2f %s", it.value / 60.0, it.key))
+    }
+
+    usage.put("zip-diff-durations file1 file2", "compare files line by line, outputting records where the duration differs")
+    if (c == "zip-diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+         if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
+            println(it.first.formatHeader())
+            println(it.second.formatHeader())
+            println()
         }
-        "sum" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
-        "test" -> test()
-        "to-tsv" -> parse().forEach { println(it.formatHeaderAsTSV()) }
-        "zip-diff-times" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-            if (it.first.getExactTime() != it.second.getExactTime() ||
-                    Math.abs(MINUTES.between(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime())) > 0) {
-                println(it.first.formatHeader())
-                println(it.second.formatHeader())
-                println()
-            }
-        }
-        "zip-diff-durations" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-             if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
-                println(it.first.formatHeader())
-                println(it.second.formatHeader())
-                println()
-            }
-        }
-        else -> println(usage)
+    }
+
+    usage.put("help", "print usage")
+    if (c == "help" || !usage.containsKey(c)) {
+        println("\nUsage: vimjournal.kt [command] [parameters]\n")
+        println("Unless specified, all commands read from stdin and write to stdout.\n")
+        usage.forEach { println(String.format("  %-30s %s", it.key, it.value)) }
     }
 }
 
@@ -661,12 +689,13 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
             && first.isExact() && second.isExact()
             && first.tags.find { it.startsWith("&") } == null
             && Math.abs(MINUTES.between(first.getDateTime().plusMinutes(duration.toLong()),
-                                        second.getDateTime())) < 2) {
+                                        second.getDateTime())) < MIN_GAP_MINUTES) {
         first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
     } else {
         first
     }
 }
+val MIN_GAP_MINUTES = 2
 
 fun String_wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
