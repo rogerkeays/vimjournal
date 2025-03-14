@@ -93,6 +93,20 @@ fun main(args: Array<String>) {
     usage.put("make-text-flashcards", "export records as text flashcards for nokia phones (writes files to current dir)")
     if (c == "make-text-flashcards") parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
 
+    usage.put("patch-times file patch_file", "update start and stop times in `file` to match records in `patch_file`, where they differ by one minute or less")
+    if (c == "patch-times") {
+        val patches = File(args[2]).parse().iterator()
+        var patch = patches.next()
+        File(args[1]).parse().forEach() {
+            if (it.isExact() && minutesBetween(it.getExactTime(), patch.getExactTime()) <= 1) {
+                it.replaceStop(patch.formatStop()).copy(seq = patch.seq).print()
+                if (patches.hasNext()) patch = patches.next()
+            } else {
+                it.print()
+            }
+        }
+    }
+
     usage.put("show-durations", "append the duration of each record")
     if (c == "show-durations") parse().withDurations().forEach {
         println("${it.first.format()} +${it.second}")
