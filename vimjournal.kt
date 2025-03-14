@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
         }
     }
 
-    usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop time differ")
+    usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop times differ")
     if (c == "diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
         if (it.first.getExactTime() != it.second.getExactTime() ||
                 it.first.getDeclaredStopTime() != it.second.getDeclaredStopTime()) {
@@ -170,10 +170,11 @@ fun main(args: Array<String>) {
     if (c == "to-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
 
     usage.put("help", "print usage")
-    if (c == "help") {
+    if (c == "help" || usage.keys.find { it.startsWith(c) } == null) {
         println("\nUsage: vimjournal.kt [command] [parameters]\n")
         println("Unless specified, all commands read from stdin and write to stdout.\n")
         usage.forEach { println(String.format("  %-30s %s", it.key, it.value)) }
+        println()
     }
 }
 
