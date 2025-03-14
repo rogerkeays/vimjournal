@@ -113,11 +113,19 @@ fun main(args: Array<String>) {
         "sum" -> println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
         "test" -> test()
         "to-tsv" -> parse().forEach { println(it.formatHeaderAsTSV()) }
-        "zip-diff" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+        "zip-diff-times" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
             if (it.first.getExactTime() != it.second.getExactTime() ||
                     Math.abs(MINUTES.between(it.first.getDeclaredStopTime(), it.second.getDeclaredStopTime())) > 0) {
                 println(it.first.formatHeader())
                 println(it.second.formatHeader())
+                println()
+            }
+        }
+        "zip-diff-durations" -> File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+             if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
+                println(it.first.formatHeader())
+                println(it.second.formatHeader())
+                println()
             }
         }
         else -> println(usage)
@@ -342,6 +350,8 @@ fun Record.getDeclaredStopTime(): LocalDateTime {
     }
 }
 val durationRegex = Regex("(\\+[0-9]+)")
+
+fun Record.getCalculatedDuration(): Long = getExactTime().until(getDeclaredStopTime(), MINUTES)
 
 fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
