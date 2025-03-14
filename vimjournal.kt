@@ -539,10 +539,10 @@ fun Sequence<Record>.sumDurations(filter: (Record) -> Boolean = { true }): Int {
     withDurations(filter).forEach { (_, duration) -> total += duration }
     return total
 }
-fun Sequence<Record>.sumDurationsFor(tagChar: Char) = sumDurations { record -> 
+fun Sequence<Record>.sumDurationsFor(tagChar: Char) = sumDurations { record ->
     record.tags.find { it.startsWith(tagChar) } != null
 }
-fun Sequence<Record>.sumDurationsFor(tag: String) = sumDurations { record -> 
+fun Sequence<Record>.sumDurationsFor(tag: String) = sumDurations { record ->
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
@@ -645,10 +645,10 @@ fun Sequence_sumDurationsByTagFor_spec() {
          Record("20000101_0230", tags=listOf("/cook")))
         .sumDurationsByTagFor('=')["/code"] returns 55
 }
-fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { record -> 
+fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { record ->
     record.tags.find { it.startsWith(tagChar) } != null
 }
-fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { record -> 
+fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { record ->
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
@@ -708,7 +708,7 @@ fun String_wrap_spec() {
 }
 fun String.wrap(width: Int): String {
     var i = 0
-    return asSequence().fold(StringBuilder()) { acc, ch -> 
+    return asSequence().fold(StringBuilder()) { acc, ch ->
         if (i > 0 && i % width == 0 && ch != '\n') acc.append("\n")
         if (ch == '\n') i = 0 else i++
         acc.append(ch)
@@ -733,15 +733,15 @@ fun Record.makeTextFlashcards(i: Int) {
 
 fun Record_sortTags_spec() {
     Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
-    Record("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns 
+    Record("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns
         Record("XXXXXXXX_XXXX", tags=listOf("@7"))
-    Record("XXXXXXXX_XXXX", tags=listOf("@7", "/1")).sortTags() returns 
+    Record("XXXXXXXX_XXXX", tags=listOf("@7", "/1")).sortTags() returns
         Record("XXXXXXXX_XXXX", tags=listOf("/1", "@7"))
-    Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns 
+    Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns
         Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1"))
 }
 fun Record.sortTags(): Record {
-    return this.copy(tags = tags.sortedWith { a, b -> 
+    return this.copy(tags = tags.sortedWith { a, b ->
         sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
     })
 }
@@ -828,15 +828,15 @@ val instantRegex = Regex("/.*!")
 fun test(klass: Class<*> = ::test.javaClass.enclosingClass, suffix: String = "_spec") {
     klass.declaredMethods.filter { it.name.endsWith(suffix) }.forEach { it(null) }
 }
-infix fun Any?.returns(result: Any?) { 
-    if (this != result) throw AssertionError("Expected: $result, got $this") 
+infix fun Any?.returns(result: Any?) {
+    if (this != result) throw AssertionError("Expected: $result, got $this")
 }
-infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) { 
-    try { 
-        invoke() 
+infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) {
+    try {
+        invoke()
         throw AssertionError("Exception expected: $ex")
-    } catch (e: Throwable) { 
+    } catch (e: Throwable) {
         if (!ex.java.isAssignableFrom(e.javaClass)) throw AssertionError("Expected: $ex, got $e")
-    } 
+    }
 }
 
