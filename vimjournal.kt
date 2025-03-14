@@ -34,6 +34,25 @@ fun main(args: Array<String>) {
     usage.put("convert-durations", "convert durations to stop time")
     if (c == "convert-durations") parse().forEach { it.convertDurationToStopTime().print() }
 
+    usage.put("diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
+    if (c == "diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+         if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
+            println(it.first.formatHeader())
+            println(it.second.formatHeader())
+            println()
+        }
+    }
+
+    usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop time differ")
+    if (c == "diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+        if (it.first.getExactTime() != it.second.getExactTime() ||
+                it.first.getDeclaredStopTime() != it.second.getDeclaredStopTime()) {
+            println(it.first.formatHeader())
+            println(it.second.formatHeader())
+            println()
+        }
+    }
+
     usage.put("format", "output records with standard formatting (does not sort tags)")
     if (c == "format") parse().forEach { it.print() }
 
@@ -149,25 +168,6 @@ fun main(args: Array<String>) {
 
     usage.put("to-tsv", "convert records headers to tab separated format")
     if (c == "to-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
-
-    usage.put("zip-diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
-    if (c == "zip-diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-         if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
-            println(it.first.formatHeader())
-            println(it.second.formatHeader())
-            println()
-        }
-    }
-
-    usage.put("zip-diff-times file1 file2", "compare files record by record, outputting records where the start or stop time differ")
-    if (c == "zip-diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-        if (it.first.getExactTime() != it.second.getExactTime() ||
-                it.first.getDeclaredStopTime() != it.second.getDeclaredStopTime()) {
-            println(it.first.formatHeader())
-            println(it.second.formatHeader())
-            println()
-        }
-    }
 
     usage.put("zip-fix-times file1 file2", "compare files record by record , patching times from file2 with file1 if they differ by one minute or less")
     if (c == "zip-fix-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
