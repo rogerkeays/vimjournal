@@ -117,7 +117,7 @@ fun main(args: Array<String>) {
     usage.put("find-overlaps", "output records whose stop time overlaps the next records start time")
     if (c == "find-overlaps") {
         var prev = Record(ZERO_SEQ)
-        parse().filter { !it.isIndented() }.forEach {
+        parse().filter { it.isForegroundAction() }.forEach {
             if (it.isExact() && it.getStartTime() < prev.getStopTime()) println(prev.formatHeader())
             prev = it
         }
