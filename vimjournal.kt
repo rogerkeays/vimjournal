@@ -2,6 +2,7 @@
 
 import java.io.BufferedReader
 import java.io.File
+import java.lang.System.err
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -187,10 +188,10 @@ fun main(args: Array<String>) {
 
     usage.put("help", "print usage")
     if (c == "help" || usage.keys.find { it.startsWith(c) } == null) {
-        println("\nUsage: vimjournal.kt [command] [parameters]\n")
-        println("Unless specified, all commands read from stdin and write to stdout.\n")
-        usage.forEach { println(String.format("  %-30s %s", it.key, it.value)) }
-        println()
+        err.println("\nUsage: vimjournal.kt [command] [parameters]\n")
+        err.println("Unless specified, all commands read from stdin and write to stdout.\n")
+        usage.forEach { err.println(String.format("  %-30s %s", it.key, it.value)) }
+        err.println()
     }
 }
 
