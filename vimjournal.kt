@@ -66,6 +66,12 @@ fun main(args: Array<String>) {
     usage.put("format", "output records with standard formatting (does not sort tags)")
     if (c == "format") parse().forEach { it.print() }
 
+    usage.put("format-naked", "output records in lowercase with no rating or tags")
+    if (c == "format-naked") parse().forEach { println("${it.seq} !| ${it.summary.lowercase()}") }
+
+    usage.put("format-timelog", "output records in lowercase with stop times and no tags")
+    if (c == "format-timelog") parse().forEach { println("${it.seq} !| ${it.formatStop().drop(1)} ${it.summary.lowercase()}") }
+
     usage.put("filter-from seq", "output records after `seq`, inclusive (presumes input is presorted)")
     if (c == "filter-from") parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
 
