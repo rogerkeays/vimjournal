@@ -365,13 +365,18 @@ fun Record.isExact() = seq.matches(exactDateTimeRegex)
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
 fun Record_getTime_spec() {
-    Record("20000101_0000").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
-    { Record("20000101_XXXX").getTime() } throws DateTimeParseException::class;
-    { Record("XXXXXXXX_XXXX").getTime() } throws DateTimeParseException::class;
+    Record("20000101_0000").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
+    Record("20000101_XXXX").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
+    Record("XXXXXXXX_XXXX").getTime() returns LocalDateTime.of(1, 1, 1, 0, 0)
 }
-fun Record.getTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
-fun Record.getStartTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
+fun Record.getTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
+
+// inexact dates are treated as starting at midnight so that stop times can be expressed as a duration
+fun Record.getStartTime(): LocalDateTime {
+    val time = getTime()
+    return if (isExact()) time else LocalDateTime.of(time.getYear(), time.getMonth(), time.getDayOfMonth(), 0, 0, 0)
+}
 
 fun Record_getStopTime_spec() {
     Record("19990101_0000").getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
