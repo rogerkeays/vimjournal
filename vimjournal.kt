@@ -45,8 +45,8 @@ fun main(args: Array<String>) {
 
     usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop times differ")
     if (c == "diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-        if (it.first.getExactTime() != it.second.getExactTime() ||
-                it.first.getDeclaredStopTime() != it.second.getDeclaredStopTime()) {
+        if (it.first.getStartTime() != it.second.getStartTime() ||
+                it.first.getStopTime() != it.second.getStopTime()) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
     if (c == "find-overlaps") {
         var prev = Record(ZERO_SEQ)
         parse().filter { !it.isIndented() }.forEach {
-            if (it.isExact() && it.getExactTime() < prev.getDeclaredStopTime()) println(prev.formatHeader())
+            if (it.isExact() && it.getStartTime() < prev.getStopTime()) println(prev.formatHeader())
             prev = it
         }
     }
@@ -117,7 +117,7 @@ fun main(args: Array<String>) {
         val patches = File(args[2]).parse().iterator()
         var patch = patches.next()
         File(args[1]).parse().forEach() {
-            if (it.isExact() && minutesBetween(it.getExactTime(), patch.getExactTime()) <= 1) {
+            if (it.isExact() && minutesBetween(it.getStartTime(), patch.getStartTime()) <= 1) {
                 it.replaceStop(patch.formatStop()).copy(seq = patch.seq).print()
                 if (patches.hasNext()) patch = patches.next()
             } else {
@@ -161,7 +161,7 @@ fun main(args: Array<String>) {
     }
 
     usage.put("sum", "sum the duration in minutes of all records (stop times must be appended first)")
-    if (c == "sum") println(parse().sumOf { it.getExactTime().until(it.getDeclaredStopTime(), MINUTES) })
+    if (c == "sum") println(parse().sumOf { it.getStartTime().until(it.getStopTime(), MINUTES) })
 
     usage.put("test", "run unit tests and output any failures")
     if (c == "test") test()
@@ -316,7 +316,7 @@ fun String.parseRecord(body: String = ""): Record {
         body = body,
         exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
     )
-    lastSeq = record.exactSeq // or record.getDeclaredStopTime()?
+    lastSeq = record.exactSeq // or record.getStopTime()?
     return record
 }
 var lastSeq = ZERO_SEQ
@@ -364,40 +364,40 @@ fun Record_isExact_spec() {
 fun Record.isExact() = seq.matches(exactDateTimeRegex)
 val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
-fun Record_getDateTime_spec() {
-    Record("20000101_0000").getDateTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
-    { Record("20000101_XXXX").getDateTime() } throws DateTimeParseException::class;
-    { Record("XXXXXXXX_XXXX").getDateTime() } throws DateTimeParseException::class;
+fun Record_getTime_spec() {
+    Record("20000101_0000").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0);
+    { Record("20000101_XXXX").getTime() } throws DateTimeParseException::class;
+    { Record("XXXXXXXX_XXXX").getTime() } throws DateTimeParseException::class;
 }
-fun Record.getDateTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
-fun Record.getExactTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
+fun Record.getTime(): LocalDateTime = LocalDateTime.parse(seq, dateTimeFormat)
+fun Record.getStartTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
-fun Record_getDeclaredStopTime_spec() {
-    Record("19990101_0000").getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
-    Record("19990101_XXXX").getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
-    Record("19990101_0100", tags=listOf("+15")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 1, 15)
-    Record("19990101_XXXX", tags=listOf("+15")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 15)
-    Record("19990101_0100", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
-    Record("19990101_XXXX", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
-    Record("19990101_2330", tags=listOf("+1000")).getDeclaredStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
+fun Record_getStopTime_spec() {
+    Record("19990101_0000").getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_XXXX").getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_0100", tags=listOf("+15")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 1, 15)
+    Record("19990101_XXXX", tags=listOf("+15")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 15)
+    Record("19990101_0100", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_XXXX", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_2330", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
 }
-fun Record.getDeclaredStopTime(): LocalDateTime {
-    val exactTime = getExactTime()
+fun Record.getStopTime(): LocalDateTime {
+    val startTime = getStartTime()
     val durationTag = tags.filter { it.matches(durationRegex) }.lastOrNull()
     return if (durationTag == null) {
-        exactTime
+        startTime
     } else if (durationTag.length == 5) {
         val stopTime = LocalTime.parse(durationTag, stopTimeFormat)
-        val plusDays = if (exactTime.toLocalTime().isAfter(stopTime)) 1L else 0L
-        LocalDateTime.of(exactTime.toLocalDate(), stopTime).plusDays(plusDays)
+        val plusDays = if (startTime.toLocalTime().isAfter(stopTime)) 1L else 0L
+        LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
     } else {
-        exactTime.plusMinutes(durationTag.substring(1).toLong())
+        startTime.plusMinutes(durationTag.substring(1).toLong())
     }
 }
 val durationRegex = Regex("(\\+[0-9]+)")
 
-fun Record.getCalculatedDuration(): Long = getExactTime().until(getDeclaredStopTime(), MINUTES)
+fun Record.getCalculatedDuration(): Long = getStartTime().until(getStopTime(), MINUTES)
 
 fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
@@ -498,8 +498,8 @@ fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequ
                     if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
                         val next = i.next()
                         if (next.isExact()) {
-                            val stop = current.getDateTime().plusMinutes(duration.toLong())
-                            val overlap = next.getDateTime().until(stop, MINUTES)
+                            val stop = current.getTime().plusMinutes(duration.toLong())
+                            val overlap = next.getTime().until(stop, MINUTES)
                             if (overlap > 0) System.err.println(
                                 "WARNING: tagged duration overlaps next record by $overlap minutes:\n  ${current.format()}\n  ${next.format()}\n")
                         }
@@ -511,8 +511,8 @@ fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequ
                         val consume = current.getSkips() + 1
                         while (consume > window.size) { window.add(i.next()) }
                         try {
-                            duration = current.getDateTime().until(
-                                window[consume - 1].getDateTime(), MINUTES).toInt()
+                            duration = current.getTime().until(
+                                window[consume - 1].getTime(), MINUTES).toInt()
                         } catch (e: DateTimeParseException) {
                             System.err.println("WARNING: ${e.message}")
                         }
@@ -706,8 +706,8 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
             && second != null
             && first.isExact() && second.isExact()
             && first.tags.find { it.startsWith("&") } == null
-            && Math.abs(MINUTES.between(first.getDateTime().plusMinutes(duration.toLong()),
-                                        second.getDateTime())) < MIN_GAP_MINUTES) {
+            && Math.abs(MINUTES.between(first.getTime().plusMinutes(duration.toLong()),
+                                        second.getTime())) < MIN_GAP_MINUTES) {
         first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
     } else {
         first
@@ -716,7 +716,7 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
 val MIN_GAP_MINUTES = 2
 
 fun Sequence<Record>.stripStopTags(): Sequence<Record> = pairs().map { (first, second) ->
-    if (second != null && first.getDeclaredStopTime() == second.getExactTime()) {
+    if (second != null && first.getStopTime() == second.getStartTime()) {
         first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
     } else {
         first
@@ -791,7 +791,7 @@ fun Record.convertDurationToStopTime(): Record {
     if (durationTag == null || !this.isExact()) return this
     return this.copy(tags = tags.map {
         if (it.matches(convertDurationRegex)) {
-            this.getDateTime().plusMinutes(durationTag.substring(1).toLong())
+            this.getTime().plusMinutes(durationTag.substring(1).toLong())
                 .format(stopTimeFormat)
         } else {
             it
@@ -856,7 +856,7 @@ fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_R
 fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
-fun Record.formatStop(): String = stopTimeFormat.format(getDeclaredStopTime())
+fun Record.formatStop(): String = stopTimeFormat.format(getStopTime())
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
