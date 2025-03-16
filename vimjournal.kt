@@ -619,8 +619,37 @@ fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { rec
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun Sequence<Record>.stripStopTags(): Sequence<Record> = pairs().map { (first, second) ->
-    if (second != null && first.getTaggedStopTime() == second.getStartTime()) {
+fun Sequence_stripStopTags_spec() {
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0040"))
+        .stripStopTags().first().tags.contains("+0040") returns false
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0041"))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0040", "and ..."))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0045"))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("XXXXXXXX_XXXX", tags=listOf("+0010")),
+         Record("00010101_0010"))
+        .stripStopTags().first().tags.contains("+0010") returns true
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("XXXXXXXX_XXXX"))
+        .stripStopTags().first().tags.contains("+0040") returns true
+}
+fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs().map { (first, second) ->
+    if (second != null &&
+            first.isExact() &&
+            first.getStartTime().plusMinutes(first.duration.toLong()) == second.getStartTime() &&
+            first.countAnds() >= second.countAnds()) {
         first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
     } else {
         first
