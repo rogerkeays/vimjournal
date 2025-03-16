@@ -93,6 +93,9 @@ fun main(args: Array<String>) {
         record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
     }.forEach { it.print() }
 
+    usage.put("filter-tagged-exact tag", "output records containing the given tag")
+    if (c == "filter-tagged-exact") parse().filter { it.tags.contains(args[1]) }.forEach { it.print() }
+
     usage.put("filter-to seq", "output records before `seq`, inclusive (presumes input is presorted)")
     if (c == "filter-to") parse().takeWhile { it.exactSeq <= args[1] }.forEach { it.print() }
 
