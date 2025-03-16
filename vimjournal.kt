@@ -70,6 +70,9 @@ fun main(args: Array<String>) {
     usage.put("format-naked [tag]", "output records in lowercase with no rating or tags")
     if (c == "format-naked") parse().filter(args).forEach { println(it.formatNaked()) }
 
+    usage.put("format-times [tag]", "output record start and stop times only: useful for comparing with `diff`")
+    if (c == "format-times") parse().withDurations().filter(args).forEach { println(it.formatTimes()) }
+
     usage.put("format-timelog [tag]", "output records in lowercase with stop times and no tags")
     if (c == "format-timelog") parse().withDurations().filter(args).forEach { println(it.formatAsTimelog()) }
 
@@ -138,7 +141,7 @@ fun main(args: Array<String>) {
         var patch = patches.next()
         File(args[1]).parse().forEach() {
             if (it.isExact() && minutesBetween(it.getStartTime(), patch.getStartTime()) <= 1) {
-                it.replaceStop(patch.formatStop()).copy(seq = patch.seq).print()
+                it.replaceStop(patch.formatStopTag()).copy(seq = patch.seq).print()
                 if (patches.hasNext()) patch = patches.next()
             } else {
                 it.print()
@@ -403,12 +406,12 @@ fun Record.getTaggedStopTime(): LocalDateTime {
     return if (stopTag == null) {
         startTime
     } else {
-        val stopTime = LocalTime.parse(stopTag, stopTimeFormat)
+        val stopTime = LocalTime.parse(stopTag, stopTagFormat)
         val plusDays = if (startTime.toLocalTime().isAfter(stopTime)) 1L else 0L
         LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
     }
 }
-val stopTimeFormat = DateTimeFormatter.ofPattern("+HHmm")
+val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 fun Record.getCalculatedDuration(): Long = getStartTime().until(getTaggedStopTime(), MINUTES)
 
@@ -766,9 +769,10 @@ fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_R
 fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
-fun Record.formatStop(): String = stopTimeFormat.format(getTaggedStopTime())
+fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
 fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
-fun Record.formatAsTimelog(): String = "${seq} !| ${formatStop().drop(1)} ${summary.lowercase()}"
+fun Record.formatAsTimelog(): String = "${seq} !| ${formatStopTag().drop(1)} ${summary.lowercase()}"
+fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
 fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
 fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
 
