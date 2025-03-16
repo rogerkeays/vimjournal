@@ -32,6 +32,10 @@ fun main(args: Array<String>) {
         println(prev.formatHeader())
     }
 
+    usage.put("count [tag]", "count the records matching the given tag, or all records if no tag is given")
+    if (c == "count" && args.size == 1) println(parse().count())
+    if (c == "count" && args.size == 2) println(parse().filter { it.tags.contains(args[1]) }.count())
+
     usage.put("diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
     if (c == "diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
          if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
