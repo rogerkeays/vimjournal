@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
 
     usage.put("add-stops", "add missing stop times from sequential records")
     if (c == "add-stops") {
-        var prev = Record(ZERO_SEQ, tags=listOf("+0"))
+        var prev = Record(ZERO_SEQ, tags=listOf("+0000"))
         parse().filter { it.isForegroundAction() }.forEach {
             if (!prev.isExact() || prev.getTaggedDuration() != null) {
                 println(prev.formatHeader())
@@ -47,7 +47,7 @@ fun main(args: Array<String>) {
     usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop times differ")
     if (c == "diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
         if (it.first.getStartTime() != it.second.getStartTime() ||
-                it.first.getStopTime() != it.second.getStopTime()) {
+                it.first.getTaggedStopTime() != it.second.getTaggedStopTime()) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -57,7 +57,7 @@ fun main(args: Array<String>) {
     usage.put("diff-times-1 file1 file2", "compare files record by record, outputting records where the start or stop times differ by more than one minute")
     if (c == "diff-times-1") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
         if (minutesBetween(it.first.getStartTime(), it.second.getStartTime()) > 1 ||
-                minutesBetween(it.first.getStopTime(), it.second.getStopTime()) > 1) {
+                minutesBetween(it.first.getTaggedStopTime(), it.second.getTaggedStopTime()) > 1) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -121,7 +121,7 @@ fun main(args: Array<String>) {
     if (c == "find-overlaps") {
         var prev = Record(ZERO_SEQ)
         parse().filter { it.isForegroundAction() }.forEach {
-            if (it.isExact() && it.getStartTime() < prev.getStopTime()) println(prev.formatHeader())
+            if (it.isExact() && it.getStartTime() < prev.getTaggedStopTime()) println(prev.formatHeader())
             prev = it
         }
     }
@@ -172,7 +172,7 @@ fun main(args: Array<String>) {
     usage.put("strip-stops", "remove stop tags where there is no gap between records")
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
 
-    usage.put("sum", "sum the duration in minutes of all records (stop times must be appended first)")
+    usage.put("sum", "sum the duration in minutes of all records")
     if (c == "sum") println(parse().withDurations().sumOf { it.duration })
 
     usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
@@ -331,7 +331,7 @@ fun String.parseRecord(body: String = ""): Record {
         body = body,
         exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
     )
-    lastSeq = record.exactSeq // or record.getStopTime()?
+    lastSeq = record.exactSeq // or record.getTaggedStopTime()?
     return record
 }
 var lastSeq = ZERO_SEQ
@@ -393,31 +393,26 @@ fun Record.getStartTime(): LocalDateTime {
     return if (isExact()) time else LocalDateTime.of(time.getYear(), time.getMonth(), time.getDayOfMonth(), 0, 0, 0)
 }
 
-fun Record_getStopTime_spec() {
-    Record("19990101_0000").getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
-    Record("19990101_XXXX").getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
-    Record("19990101_0100", tags=listOf("+15")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 1, 15)
-    Record("19990101_XXXX", tags=listOf("+15")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 15)
-    Record("19990101_0100", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
-    Record("19990101_XXXX", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
-    Record("19990101_2330", tags=listOf("+1000")).getStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
+fun Record_getTaggedStopTime_spec() {
+    Record("19990101_0000").getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_XXXX").getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
+    Record("19990101_0100", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_XXXX", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
+    Record("19990101_2330", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
 }
-fun Record.getStopTime(): LocalDateTime {
+fun Record.getTaggedStopTime(): LocalDateTime {
     val startTime = getStartTime()
-    val durationTag = tags.filter { it.matches(durationRegex) }.lastOrNull()
-    return if (durationTag == null) {
+    val stopTag = tags.filter { it.matches(STOP_REGEX) }.lastOrNull()
+    return if (stopTag == null) {
         startTime
-    } else if (durationTag.length == 5) {
-        val stopTime = LocalTime.parse(durationTag, stopTimeFormat)
+    } else {
+        val stopTime = LocalTime.parse(stopTag, stopTimeFormat)
         val plusDays = if (startTime.toLocalTime().isAfter(stopTime)) 1L else 0L
         LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
-    } else {
-        startTime.plusMinutes(durationTag.substring(1).toLong())
     }
 }
-val durationRegex = Regex("(\\+[0-9]+)")
 
-fun Record.getCalculatedDuration(): Long = getStartTime().until(getStopTime(), MINUTES)
+fun Record.getCalculatedDuration(): Long = getStartTime().until(getTaggedStopTime(), MINUTES)
 
 fun Record_getTaggedDuration_spec() {
     Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
@@ -482,65 +477,81 @@ fun Sequence_withDurations_spec() {
          Record("20000101_0000"))
         .withDurations().first().duration returns 0
     sequenceOf(
-         Record("20000101_0000", tags=listOf("+15")))
+         Record("20000101_0000", tags=listOf("+0015")))
         .withDurations().first().duration returns 15
     sequenceOf(
          Record("20000101_0000"),
          Record("20000101_0015"),
-         Record("20000101_0030", tags=listOf("+10")))
+         Record("20000101_0030", tags=listOf("+0040")))
         .withDurations().map { it.duration }.toList() returns listOf(15, 15, 10)
     sequenceOf(
-         Record("20000102_1030", tags=listOf("&")),
-         Record("20000102_1045"),
+         Record("20000102_1030"),
+         Record("20000102_1045", "& ..."),
          Record("20000102_1115"))
         .withDurations().first().duration returns 45
     sequenceOf(
-         Record("20000102_1030", tags=listOf("+5", "&")),
-         Record("20000102_1045"),
+         Record("20000102_1030"),
+         Record("20000102_1045", "and ..."),
+         Record("20000102_1115"))
+        .withDurations().first().duration returns 45
+    sequenceOf(
+         Record("20000102_1030", tags=listOf("+1035")),
+         Record("20000102_1045", "and ..."),
          Record("20000102_1115"))
         .withDurations().first().duration returns 5
     sequenceOf(
-         Record("20000102_1030", tags=listOf("&2")),
-         Record("20000102_1045"),
-         Record("20000102_1115"),
+         Record("20000102_1030"),
+         Record("20000102_1045", "and ..."),
+         Record("20000102_1115", "and ..."),
          Record("20000102_1145"))
         .withDurations().first().duration returns 75
+    sequenceOf(
+         Record("20000102_1030"),
+         Record("20000102_1045", "and ..."),
+         Record("20000102_1105", "and ..."),
+         Record("20000102_1145"))
+        .withDurations().elementAt(1).duration returns 20
 }
 fun Sequence<Record>.withDurations(): Sequence<Record> {
     val i = iterator()
-    val window = LinkedList<Record>()
+    val peeks = LinkedList<Record>()
     return generateSequence {
-        while (window.isNotEmpty() || i.hasNext()) {
-            val current = if (window.isNotEmpty()) window.remove() else i.next()
-            var duration = current.getTaggedDuration()
-            if (duration != null) {
-                if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
-                    val next = i.next()
-                    if (next.isExact()) {
-                        val stop = current.getTime().plusMinutes(duration.toLong())
-                        val overlap = next.getTime().until(stop, MINUTES)
-                        if (overlap > 0) System.err.println(
-                            "WARNING: tagged duration overlaps next record by $overlap minutes:\n  ${current.format()}\n  ${next.format()}\n")
-                    }
-                    window.add(next)
-                }
+        while (peeks.isNotEmpty() || i.hasNext()) {
+            val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
+            if (current.isIndented() || current.isInstant()) {
+                return@generateSequence current.copy(duration = 0)
+            } else if (!current.isExact() || current.hasStopTag()) { // TODO: check for overlaps
+                return@generateSequence current.copy(duration =
+                    MINUTES.between(current.getStartTime(), current.getTaggedStopTime()).toInt())
             } else {
-                duration = 0
-                try {
-                    val consume = current.getSkips() + 1
-                    while (consume > window.size) { window.add(i.next()) }
-                    try {
-                        duration = current.getTime().until(
-                            window[consume - 1].getTime(), MINUTES).toInt()
-                    } catch (e: DateTimeParseException) {
-                        System.err.println("WARNING: ${e.message}")
+
+                // look through the window
+                val numAnds = current.countAnds()
+                for (record in peeks) {
+                    if (!record.isIndented() && record.countAnds() <= numAnds) {
+                        return@generateSequence current.copy(duration = current.minutesUntil(record))
                     }
-                } catch (e: NoSuchElementException) {}
+                }
+
+                // look down the sequence
+                while (i.hasNext()) {
+                    val record = i.next()
+                    peeks.add(record)
+                    if (!record.isIndented() && record.countAnds() <= numAnds) {
+                        return@generateSequence current.copy(duration = current.minutesUntil(record))
+                    }
+                }
+                return@generateSequence current.copy(duration = 0)
             }
-            return@generateSequence current.copy(duration = duration!!)
         }
         return@generateSequence null
     }
+}
+
+fun Record.minutesUntil(next: Record): Int {
+    if (!next.isExact()) throw AssertionError("Next record has no start time: ${this}")
+    if (next.getTime() < getTime()) throw AssertionError("Next record is before this one: ${this}")
+    return MINUTES.between(getTime(), next.getTime()).toInt()
 }
 
 fun Sequence_sumDurationsByTag_spec() {
@@ -549,49 +560,49 @@ fun Sequence_sumDurationsByTag_spec() {
          Record("20000101_0000", tags=listOf("=p1")))
         .sumDurationsByTag()["=p1"] returns 0
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
         .sumDurationsByTag()["=p1"] returns 15
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
         .sumDurationsByTag()["=p2"] returns null
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
-        .sumDurationsByTag().containsKey("+15") returns false
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTag().containsKey("+0015") returns false
     sequenceOf(
          Record("20000101_0000", tags=listOf("/code", "=p1")),
          Record("20000101_0015", tags=listOf("/debug", "=p1")),
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p2")))
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
         .sumDurationsByTag()["=p1"] returns 30
     sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
          Record("20000101_0145", tags=listOf("/debug", "=p2")),
          Record("20000101_0230", tags=listOf("/cook")))
         .sumDurationsByTag()["=p2"] returns 55
     sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake", "&")),
-         Record("20000102_1045", tags=listOf("/recall")),
+         Record("20000102_1030", tags=listOf("/wake")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
          Record("20000102_1115", tags=listOf("/cook")))
         .sumDurationsByTag()["/wake"] returns 45
     sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake", "+5", "&")),
-         Record("20000102_1045", tags=listOf("/recall")),
+         Record("20000102_1030", tags=listOf("/wake", "+1035")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
          Record("20000102_1115", tags=listOf("/cook")))
         .sumDurationsByTag()["/wake"] returns 5
     sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake", "&2")),
-         Record("20000102_1045", tags=listOf("/recall")),
-         Record("20000102_1115", tags=listOf("/stretch")),
+         Record("20000102_1030", tags=listOf("/wake")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
+         Record("20000102_1115", "and ...", tags=listOf("/stretch")),
          Record("20000102_1145", tags=listOf("/cook")))
         .sumDurationsByTag()["/wake"] returns 75
     sequenceOf(
-         Record("20000102_1200", tags=listOf("/code", "=p3", "&")),
-         Record("20000102_1230", tags=listOf("/search", "=p3")),
+         Record("20000102_1200", tags=listOf("/code", "=p3")),
+         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
          Record("20000102_1300", tags=listOf("/cook")))
         .sumDurationsByTag()["=p3"] returns 90
     sequenceOf(
-         Record("20000102_1200", tags=listOf("/code", "=p3", "&2")),
-         Record("20000102_1230", tags=listOf("/search", "=p3")),
-         Record("20000102_1300", tags=listOf("/cook")),
+         Record("20000102_1200", tags=listOf("/code", "=p3")),
+         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
+         Record("20000102_1300", "and ...", tags=listOf("/cook")),
          Record("20000102_1400", tags=listOf("/trawl")))
         .sumDurationsByTag()["=p3"] returns 150
 }
@@ -613,31 +624,31 @@ fun Sequence_sumDurationsByTagFor_spec() {
          Record("20000101_0000", tags=listOf("=p1")))
         .sumDurationsByTagFor("=p1")["=p1"] returns 0
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
         .sumDurationsByTagFor("=p1")["=p1"] returns 15
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
         .sumDurationsByTagFor("=p2")["=p1"] returns null
     sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+15")))
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
         .sumDurationsByTagFor("=p1")["=p2"] returns null
     sequenceOf(
          Record("20000101_0000", tags=listOf("/code", "=p1")),
          Record("20000101_0015", tags=listOf("/debug", "=p1")),
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p2")))
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
         .sumDurationsByTagFor("=p1")["/code"] returns 15
     sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
          Record("20000101_0145", tags=listOf("/debug", "=p2.x")),
          Record("20000101_0230", tags=listOf("/cook")))
         .sumDurationsByTagFor("=p2")["=p2.x"] returns 45
     sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p2")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
          Record("20000101_0145", tags=listOf("/debug", "=p2x")),
          Record("20000101_0230", tags=listOf("/cook")))
         .sumDurationsByTagFor("=p2")["=p2x"] returns null
     sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+10", "=p1")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p1")),
          Record("20000101_0145", tags=listOf("/code", "=p2")),
          Record("20000101_0230", tags=listOf("/cook")))
         .sumDurationsByTagFor('=')["/code"] returns 55
@@ -695,7 +706,7 @@ fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (firs
 val MIN_GAP_MINUTES = 2
 
 fun Sequence<Record>.stripStopTags(): Sequence<Record> = pairs().map { (first, second) ->
-    if (second != null && first.getStopTime() == second.getStartTime()) {
+    if (second != null && first.getTaggedStopTime() == second.getStartTime()) {
         first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
     } else {
         first
@@ -813,8 +824,10 @@ fun makeExactSeq(s: String) : String {
 }
 
 fun Record.isIndented(): Boolean = summary.startsWith(" ")
-fun Record.isBackgroundAction(): Boolean = summary.startsWith("& ") || summary.startsWith("and ")
-fun Record.isForegroundAction(): Boolean = !isIndented() && !isBackgroundAction()
+fun Record.isAction(): Boolean = !summary.startsWith(" ")
+fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
+fun Record.isBackgroundAction(): Boolean = isAction() && summary.startsWith("& ") || summary.startsWith("and ")
+fun Record.countAnds(): Int = if (summary.startsWith("& ") || summary.startsWith("and ")) 1 else 0
 
 fun Record_isInstant_spec() {
     Record("20000101_0000").isInstant() returns false
@@ -835,7 +848,8 @@ fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_R
 fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
-fun Record.formatStop(): String = stopTimeFormat.format(getStopTime())
+fun Record.formatStop(): String = stopTimeFormat.format(getTaggedStopTime())
+fun Record.hasStopTag() = tags.any { it.matches(STOP_REGEX) }
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
