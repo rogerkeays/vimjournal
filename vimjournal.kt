@@ -73,6 +73,9 @@ fun main(args: Array<String>) {
     usage.put("format-timelog", "output records in lowercase with stop times and no tags")
     if (c == "format-timelog") parse().forEach { println("${it.seq} !| ${it.formatStop().drop(1)} ${it.summary.lowercase()}") }
 
+    usage.put("format-tsv", "output record headers in tab separated format")
+    if (c == "format-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
+
     usage.put("filter-from seq", "output records after `seq`, inclusive (presumes input is presorted)")
     if (c == "filter-from") parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
 
@@ -179,9 +182,6 @@ fun main(args: Array<String>) {
 
     usage.put("test", "run unit tests and output any failures")
     if (c == "test") test()
-
-    usage.put("to-tsv", "convert records headers to tab separated format")
-    if (c == "to-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
 
     usage.put("help", "print usage")
     if (c == "help" || usage.keys.find { it.startsWith(c) } == null) {
