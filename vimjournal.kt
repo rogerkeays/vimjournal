@@ -169,6 +169,9 @@ fun main(args: Array<String>) {
     usage.put("sum", "sum the duration in minutes of all records")
     if (c == "sum") println(parse().withDurations().sumOf { it.duration })
 
+    usage.put("sum-tag", "sum the duration in minutes of all records with the given tag")
+    if (c == "sum-tag") println(parse().withDurations().filter { it.tags.contains(args[1]) }.sumOf { it.duration })
+
     usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
     if (c == "sum-durations-by-tag") parse().sumDurationsByTagFor(args[1]).entries.forEach {
         println(String.format("% 8.2f %s", it.value / 60.0, it.key))
