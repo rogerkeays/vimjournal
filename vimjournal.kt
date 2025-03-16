@@ -169,16 +169,13 @@ fun main(args: Array<String>) {
     usage.put("strip-stops", "remove stop tags where there is no gap between records")
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
 
-    usage.put("sum-durations", "sum the duration in minutes of all records")
-    if (c == "sum-durations") println(parse().sumDurations())
+    usage.put("sum", "sum the duration in minutes of all records (stop times must be appended first)")
+    if (c == "sum") println(parse().withDurations().sumOf { it.duration })
 
     usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
     if (c == "sum-durations-by-tag") parse().sumDurationsByTagFor(args[1]).entries.forEach {
         println(String.format("% 8.2f %s", it.value / 60.0, it.key))
     }
-
-    usage.put("sum", "sum the duration in minutes of all records (stop times must be appended first)")
-    if (c == "sum") println(parse().sumOf { it.getStartTime().until(it.getStopTime(), MINUTES) })
 
     usage.put("test", "run unit tests and output any failures")
     if (c == "test") test()
@@ -509,82 +506,41 @@ fun Sequence_withDurations_spec() {
          Record("20000102_1145"))
         .withDurations().first().duration returns 75
 }
-fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequence<Record> {
+fun Sequence<Record>.withDurations(): Sequence<Record> {
     val i = iterator()
     val window = LinkedList<Record>()
     return generateSequence {
         while (window.isNotEmpty() || i.hasNext()) {
             val current = if (window.isNotEmpty()) window.remove() else i.next()
-            if (filter.invoke(current)) {
-                var duration = current.getTaggedDuration()
-                if (duration != null) {
-                    if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
-                        val next = i.next()
-                        if (next.isExact()) {
-                            val stop = current.getTime().plusMinutes(duration.toLong())
-                            val overlap = next.getTime().until(stop, MINUTES)
-                            if (overlap > 0) System.err.println(
-                                "WARNING: tagged duration overlaps next record by $overlap minutes:\n  ${current.format()}\n  ${next.format()}\n")
-                        }
-                        window.add(next)
+            var duration = current.getTaggedDuration()
+            if (duration != null) {
+                if (current.isExact() && current.getSkips() == 0 && i.hasNext()) {
+                    val next = i.next()
+                    if (next.isExact()) {
+                        val stop = current.getTime().plusMinutes(duration.toLong())
+                        val overlap = next.getTime().until(stop, MINUTES)
+                        if (overlap > 0) System.err.println(
+                            "WARNING: tagged duration overlaps next record by $overlap minutes:\n  ${current.format()}\n  ${next.format()}\n")
                     }
-                } else {
-                    duration = 0
-                    try {
-                        val consume = current.getSkips() + 1
-                        while (consume > window.size) { window.add(i.next()) }
-                        try {
-                            duration = current.getTime().until(
-                                window[consume - 1].getTime(), MINUTES).toInt()
-                        } catch (e: DateTimeParseException) {
-                            System.err.println("WARNING: ${e.message}")
-                        }
-                    } catch (e: NoSuchElementException) {}
+                    window.add(next)
                 }
-                return@generateSequence current.copy(duration = duration!!)
+            } else {
+                duration = 0
+                try {
+                    val consume = current.getSkips() + 1
+                    while (consume > window.size) { window.add(i.next()) }
+                    try {
+                        duration = current.getTime().until(
+                            window[consume - 1].getTime(), MINUTES).toInt()
+                    } catch (e: DateTimeParseException) {
+                        System.err.println("WARNING: ${e.message}")
+                    }
+                } catch (e: NoSuchElementException) {}
             }
+            return@generateSequence current.copy(duration = duration!!)
         }
         return@generateSequence null
     }
-}
-
-fun Sequence_sumDurations_spec() {
-    sequenceOf<Record>().sumDurations() returns 0
-    sequenceOf(
-         Record("20000101_0000"))
-        .sumDurations() returns 0
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("+15")))
-        .sumDurations() returns 15
-    sequenceOf(
-         Record("20000101_0000"),
-         Record("20000101_0015"))
-        .sumDurations() returns 15
-    sequenceOf(
-         Record("20000101_0000"),
-         Record("20000101_0015", tags=listOf("+10")))
-        .sumDurations() returns 25
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("20000101_0145"),
-         Record("20000101_0230"))
-        .sumDurations() returns 55
-    sequenceOf(
-         Record("20000102_1030", tags=listOf("&")),
-         Record("20000102_1045"),
-         Record("20000102_1115"))
-        .sumDurations() returns 75
-}
-fun Sequence<Record>.sumDurations(filter: (Record) -> Boolean = { true }): Int {
-    var total = 0
-    withDurations(filter).forEach { total += it.duration }
-    return total
-}
-fun Sequence<Record>.sumDurationsFor(tagChar: Char) = sumDurations { record ->
-    record.tags.find { it.startsWith(tagChar) } != null
-}
-fun Sequence<Record>.sumDurationsFor(tag: String) = sumDurations { record ->
-    record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
 fun Sequence_sumDurationsByTag_spec() {
@@ -641,7 +597,7 @@ fun Sequence_sumDurationsByTag_spec() {
 }
 fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf<String, Int>().toSortedMap()
-    withDurations(filter).forEach {
+    withDurations().filter(filter).forEach {
         for (tag in it.tags) {
             if (!tag.matches(excludeTagRegex)) {
                 totals.put(tag, totals.get(tag)?.plus(it.duration) ?: it.duration)
