@@ -33,8 +33,7 @@ fun main(args: Array<String>) {
     }
 
     usage.put("count [tag]", "count the records matching the given tag, or all records if no tag is given")
-    if (c == "count" && args.size == 1) println(parse().count())
-    if (c == "count" && args.size == 2) println(parse().filter { it.tags.contains(args[1]) }.count())
+    if (c == "count") println(parse().filter(args).count())
 
     usage.put("diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
     if (c == "diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
@@ -65,17 +64,17 @@ fun main(args: Array<String>) {
         }
     }
 
-    usage.put("format", "output records with standard formatting (does not sort tags)")
-    if (c == "format") parse().forEach { it.print() }
+    usage.put("format [tag]", "output records with standard formatting (does not sort tags)")
+    if (c == "format") parse().filter(args).forEach { it.print() }
 
-    usage.put("format-naked", "output records in lowercase with no rating or tags")
-    if (c == "format-naked") parse().forEach { println("${it.seq} !| ${it.summary.lowercase()}") }
+    usage.put("format-naked [tag]", "output records in lowercase with no rating or tags")
+    if (c == "format-naked") parse().filter(args).forEach { println(it.formatNaked()) }
 
-    usage.put("format-timelog", "output records in lowercase with stop times and no tags")
-    if (c == "format-timelog") parse().forEach { println("${it.seq} !| ${it.formatStop().drop(1)} ${it.summary.lowercase()}") }
+    usage.put("format-timelog [tag]", "output records in lowercase with stop times and no tags")
+    if (c == "format-timelog") parse().withDurations().filter(args).forEach { println(it.formatAsTimelog()) }
 
-    usage.put("format-tsv", "output record headers in tab separated format")
-    if (c == "format-tsv") parse().forEach { println(it.formatHeaderAsTSV()) }
+    usage.put("format-tsv [tag]", "output record headers in tab separated format")
+    if (c == "format-tsv") parse().filter(args).forEach { println(it.formatHeaderAsTSV()) }
 
     usage.put("filter-from seq", "output records after `seq`, inclusive (presumes input is presorted)")
     if (c == "filter-from") parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
@@ -96,9 +95,6 @@ fun main(args: Array<String>) {
     if (c == "filter-tagged") parse().filter { record ->
         record.tags.filter { tag -> tag.contains(Regex(args[1])) }.size > 0
     }.forEach { it.print() }
-
-    usage.put("filter-tagged-exact tag", "output records containing the given tag")
-    if (c == "filter-tagged-exact") parse().filter { it.tags.contains(args[1]) }.forEach { it.print() }
 
     usage.put("filter-to seq", "output records before `seq`, inclusive (presumes input is presorted)")
     if (c == "filter-to") parse().takeWhile { it.exactSeq <= args[1] }.forEach { it.print() }
@@ -130,11 +126,11 @@ fun main(args: Array<String>) {
         }
     }
 
-    usage.put("make-flashcards", "export records as png flashcards for nokia phones (requires ImageMagick, writes files to current dir)")
-    if (c == "make-flashcards") parse().forEachIndexed { i, it -> it.makeFlashcard(i) }
+    usage.put("make-flashcards [tag]", "export records as png flashcards for nokia phones (requires ImageMagick, writes files to current dir)")
+    if (c == "make-flashcards") parse().filter(args).forEachIndexed { i, it -> it.makeFlashcard(i) }
 
-    usage.put("make-text-flashcards", "export records as text flashcards for nokia phones (writes files to current dir)")
-    if (c == "make-text-flashcards") parse().forEachIndexed { i, it -> it.makeTextFlashcards(i) }
+    usage.put("make-text-flashcards [tag]", "export records as text flashcards for nokia phones (writes files to current dir)")
+    if (c == "make-text-flashcards") parse().filter(args).forEachIndexed { i, it -> it.makeTextFlashcards(i) }
 
     usage.put("patch-times file patch_file", "update start and stop times in `file` to match records in `patch_file`, where they differ by one minute or less")
     if (c == "patch-times") {
@@ -174,8 +170,7 @@ fun main(args: Array<String>) {
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
 
     usage.put("sum [tag]", "sum the duration in minutes of records with the given tag, or all records if no tag is given")
-    if (c == "sum" && args.size == 1) println(parse().withDurations().sumOf { it.duration })
-    if (c == "sum" && args.size == 2) println(parse().withDurations().filter { it.tags.contains(args[1]) }.sumOf { it.duration })
+    if (c == "sum") println(parse().withDurations().filter(args).sumOf { it.duration })
 
     usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
     if (c == "sum-durations-by-tag") parse().sumDurationsByTagFor(args[1]).entries.forEach {
@@ -772,7 +767,10 @@ fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.mat
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
 fun Record.formatStop(): String = stopTimeFormat.format(getTaggedStopTime())
-fun Record.hasStopTag() = tags.any { it.matches(STOP_REGEX) }
+fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
+fun Record.formatAsTimelog(): String = "${seq} !| ${formatStop().drop(1)} ${summary.lowercase()}"
+fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
+fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
 
 // simple test functions, since kotlin.test is not on the default classpath
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
