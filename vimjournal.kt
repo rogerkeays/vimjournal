@@ -32,9 +32,9 @@ fun main(args: Array<String>) {
     }
 
     usage.put("diff-times file1 file2", "compare files record by record, outputting records where the start or stop times differ")
-    if (c == "diff-times") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+    if (c == "diff-times") File(args[1]).parse().withDurations().zip(File(args[2]).parse().withDurations()).forEach {
         if (it.first.getStartTime() != it.second.getStartTime() ||
-                it.first.getTaggedStopTime() != it.second.getTaggedStopTime()) {
+                it.first.getStopTime() != it.second.getStopTime()) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -42,9 +42,9 @@ fun main(args: Array<String>) {
     }
 
     usage.put("diff-times-1 file1 file2", "compare files record by record, outputting records where the start or stop times differ by more than one minute")
-    if (c == "diff-times-1") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
+    if (c == "diff-times-1") File(args[1]).parse().withDurations().zip(File(args[2]).parse().withDurations()).forEach {
         if (minutesBetween(it.first.getStartTime(), it.second.getStartTime()) > 1 ||
-                minutesBetween(it.first.getTaggedStopTime(), it.second.getTaggedStopTime()) > 1) {
+                minutesBetween(it.first.getStopTime(), it.second.getStopTime()) > 1) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
