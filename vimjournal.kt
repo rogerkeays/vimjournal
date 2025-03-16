@@ -763,14 +763,14 @@ fun Record_convertDurationToStopTime_spec() {
     Record("20250103_1600", tags=listOf("+1615")).convertDurationToStopTime() returns
         Record("20250103_1600", tags=listOf("+1615"))
     Record("20250103_XXXX", tags=listOf("+15")).convertDurationToStopTime() returns
-        Record("20250103_XXXX", tags=listOf("+15"))
+        Record("20250103_XXXX", tags=listOf("+0015"))
 }
 fun Record.convertDurationToStopTime(): Record {
     val durationTag = tags.filter { it.matches(convertDurationRegex) }.lastOrNull()
-    if (durationTag == null || !this.isExact()) return this
+    if (durationTag == null) return this
     return this.copy(tags = tags.map {
         if (it.matches(convertDurationRegex)) {
-            this.getTime().plusMinutes(durationTag.substring(1).toLong())
+            this.getStartTime().plusMinutes(durationTag.substring(1).toLong())
                 .format(stopTimeFormat)
         } else {
             it
