@@ -145,7 +145,7 @@ fun main(args: Array<String>) {
 
     usage.put("show-durations", "append the duration of each record")
     if (c == "show-durations") parse().withDurations().forEach {
-        println("${it.first.format()} +${it.second}")
+        println("${it.format()} +${it.duration}")
     }
 
     usage.put("sort", "sort records by seq: approximate seqs are stable")
@@ -201,7 +201,8 @@ data class Record(
         val rating: String = ">",
         val tags: List<String> = listOf(),
         val body: String = "",
-        val exactSeq: String = makeExactSeq(seq)) {
+        val exactSeq: String = makeExactSeq(seq),
+        val duration: Int = 0) {
 
     val priority = when (rating) {
         "*" -> 1
@@ -482,33 +483,33 @@ fun Sequence_withDurations_spec() {
     sequenceOf<Record>().withDurations().count() returns 0
     sequenceOf(
          Record("20000101_0000"))
-        .withDurations().first().second returns 0
+        .withDurations().first().duration returns 0
     sequenceOf(
          Record("20000101_0000", tags=listOf("+15")))
-        .withDurations().first().second returns 15
+        .withDurations().first().duration returns 15
     sequenceOf(
          Record("20000101_0000"),
          Record("20000101_0015"),
          Record("20000101_0030", tags=listOf("+10")))
-        .withDurations().map { it.second }.toList() returns listOf(15, 15, 10)
+        .withDurations().map { it.duration }.toList() returns listOf(15, 15, 10)
     sequenceOf(
          Record("20000102_1030", tags=listOf("&")),
          Record("20000102_1045"),
          Record("20000102_1115"))
-        .withDurations().first().second returns 45
+        .withDurations().first().duration returns 45
     sequenceOf(
          Record("20000102_1030", tags=listOf("+5", "&")),
          Record("20000102_1045"),
          Record("20000102_1115"))
-        .withDurations().first().second returns 5
+        .withDurations().first().duration returns 5
     sequenceOf(
          Record("20000102_1030", tags=listOf("&2")),
          Record("20000102_1045"),
          Record("20000102_1115"),
          Record("20000102_1145"))
-        .withDurations().first().second returns 75
+        .withDurations().first().duration returns 75
 }
-fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequence<Pair<Record, Int>> {
+fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequence<Record> {
     val i = iterator()
     val window = LinkedList<Record>()
     return generateSequence {
@@ -540,7 +541,7 @@ fun Sequence<Record>.withDurations(filter: (Record) -> Boolean = { true }): Sequ
                         }
                     } catch (e: NoSuchElementException) {}
                 }
-                return@generateSequence Pair(current, duration!!)
+                return@generateSequence current.copy(duration = duration!!)
             }
         }
         return@generateSequence null
@@ -576,7 +577,7 @@ fun Sequence_sumDurations_spec() {
 }
 fun Sequence<Record>.sumDurations(filter: (Record) -> Boolean = { true }): Int {
     var total = 0
-    withDurations(filter).forEach { (_, duration) -> total += duration }
+    withDurations(filter).forEach { total += it.duration }
     return total
 }
 fun Sequence<Record>.sumDurationsFor(tagChar: Char) = sumDurations { record ->
@@ -640,10 +641,10 @@ fun Sequence_sumDurationsByTag_spec() {
 }
 fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf<String, Int>().toSortedMap()
-    withDurations(filter).forEach { (record, duration) ->
-        for (tag in record.tags) {
+    withDurations(filter).forEach {
+        for (tag in it.tags) {
             if (!tag.matches(excludeTagRegex)) {
-                totals.put(tag, totals.get(tag)?.plus(duration) ?: duration)
+                totals.put(tag, totals.get(tag)?.plus(it.duration) ?: it.duration)
             }
         }
     }
