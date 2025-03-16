@@ -154,7 +154,7 @@ fun main(args: Array<String>) {
     usage.put("sort-tags", "sort record tags in the following order: ${sortTagsOrder}")
     if (c == "sort-tags") parse().forEach { it.sortTags().print() }
 
-    usage.put("strip-stops", "remove stop tags where there is a one minute or smaller gap between records")
+    usage.put("strip-stops", "remove stop tags where the gap between records is less than ${MIN_GAP} minutes")
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
 
     usage.put("sum [tag]", "sum the duration in minutes of records with the given tag, or all records if no tag is given")
@@ -635,16 +635,21 @@ fun Sequence_stripStopTags_spec() {
          Record("20000101_0030", tags=listOf("+0040")),
          Record("XXXXXXXX_XXXX"))
         .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("20000101_2330", tags=listOf("+0000")),
+         Record("XXXXXXXX_XXXX"))
+        .stripStopTags().first().tags.contains("+0000") returns true
 }
 fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs().map { (first, second) ->
-    if (second != null &&
-            first.isExact() && first.countAnds() >= second.countAnds() &&
-            minutesBetween(first.getStopTime(), second.getStartTime()) <= 1) {
+    if (second != null && first.isExact() && second.isExact() && first.duration != 0 &&
+            first.countAnds() >= second.countAnds() &&
+            minutesBetween(first.getStopTime(), second.getStartTime()) <= MIN_GAP) {
         first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
     } else {
         first
     }
 }
+val MIN_GAP = 2
 
 fun String_wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
