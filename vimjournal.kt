@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
     if (c == "add-stops") {
         var prev = Record(ZERO_SEQ, tags=listOf("+0000"))
         parse().filter { it.isForegroundAction() }.forEach {
-            if (!prev.isExact() || prev.hasStopTag()) {
+            if (!prev.isExact() || prev.isInstant() || prev.hasStopTag()) {
                 println(prev.formatHeader())
             } else if (prev.isExact() && it.isExact()) {
                 println("${prev.formatHeader()} +${it.seq.drop(9)}")
