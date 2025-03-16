@@ -20,7 +20,7 @@ fun main(args: Array<String>) {
     if (c == "add-stops") {
         var prev = Record(ZERO_SEQ, tags=listOf("+0000"))
         parse().filter { it.isForegroundAction() }.forEach {
-            if (!prev.isExact() || prev.getTaggedDuration() != null) {
+            if (!prev.isExact() || prev.hasStopTag()) {
                 println(prev.formatHeader())
             } else if (prev.isExact() && it.isExact()) {
                 println("${prev.formatHeader()} +${it.seq.drop(9)}")
@@ -31,9 +31,6 @@ fun main(args: Array<String>) {
         }
         println(prev.formatHeader())
     }
-
-    usage.put("convert-durations", "convert durations to stop time")
-    if (c == "convert-durations") parse().forEach { it.convertDurationToStopTime().print() }
 
     usage.put("diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
     if (c == "diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
@@ -112,7 +109,7 @@ fun main(args: Array<String>) {
     if (c == "find-missing-stops") {
         var prev = Record(ZERO_SEQ)
         parse().filter { !it.isIndented() }.forEach {
-            if (prev.isExact() && prev.getTaggedDuration() == null && !it.isExact()) println(prev.formatHeader())
+            if (prev.isExact() && !prev.hasStopTag() && !it.isExact()) println(prev.formatHeader())
             prev = it
         }
     }
@@ -165,9 +162,6 @@ fun main(args: Array<String>) {
 
     usage.put("sort-tags", "sort record tags in the following order: ${sortTagsOrder}")
     if (c == "sort-tags") parse().forEach { it.sortTags().print() }
-
-    usage.put("strip-durations", "remove durations where the gap until the next record is less than ${MIN_GAP_MINUTES} minutes")
-    if (c == "strip-durations") parse().stripDurationTags().forEach { it.print() }
 
     usage.put("strip-stops", "remove stop tags where there is no gap between records")
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
@@ -411,44 +405,9 @@ fun Record.getTaggedStopTime(): LocalDateTime {
         LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
     }
 }
+val stopTimeFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 fun Record.getCalculatedDuration(): Long = getStartTime().until(getTaggedStopTime(), MINUTES)
-
-fun Record_getTaggedDuration_spec() {
-    Record("XXXXXXXX_XXXX").getTaggedDuration() returns null
-    Record("XXXXXXXX_XXXX", tags=listOf("+0")).getTaggedDuration() returns 0
-    Record("XXXXXXXX_XXXX", tags=listOf("+word")).getTaggedDuration() returns null
-    Record("XXXXXXXX_XXXX", tags=listOf("/code", "+15")).getTaggedDuration() returns 15
-    Record("XXXXXXXX_XXXX", tags=listOf("/code", "+15", "+30")).getTaggedDuration() returns 30
-    Record("XXXXXXXX_XXXX", tags=listOf("/code!")).getTaggedDuration() returns 0
-    Record("XXXXXXXX_XXXX", tags=listOf("+15", "/code!")).getTaggedDuration() returns 0
-    Record("XXXXXXXX_XXXX", tags=listOf("/code!", "+15")).getTaggedDuration() returns 15
-}
-fun Record.getTaggedDuration(): Int? {
-    val durationTag = tags.filter { it.matches(durationOrInstantRegex) }.lastOrNull()
-    if (durationTag == null) return null
-    if (durationTag.endsWith("!")) return 0
-    return durationTag.substring(1).toInt()
-}
-val durationOrInstantRegex = Regex("(\\+[0-9]+|/.*!)")
-
-fun Record_getSkips_spec() {
-    Record("XXXXXXXX_XXXX").getSkips() returns 0
-    Record("XXXXXXXX_XXXX", tags=listOf("&")).getSkips() returns 1
-    Record("XXXXXXXX_XXXX", tags=listOf("&", "#foo")).getSkips() returns 1
-    Record("XXXXXXXX_XXXX", tags=listOf("&1", "#foo")).getSkips() returns 1
-    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "&")).getSkips() returns 1
-    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "&2")).getSkips() returns 2
-    Record("XXXXXXXX_XXXX", tags=listOf("&2", "#foo")).getSkips() returns 2
-    Record("XXXXXXXX_XXXX", tags=listOf("&2", "#foo", "&3")).getSkips() returns 3
-}
-fun Record.getSkips(): Int {
-    val skipsTag = tags.filter { it.matches(skipsRegex) }.lastOrNull()
-    if (skipsTag == null) return 0
-    if (skipsTag.length == 1) return 1
-    return skipsTag.substring(1).toInt()
-}
-val skipsRegex = Regex("&[0-9]*")
 
 fun Sequence_pairs_spec() {
     sequenceOf<Int>().pairs().toList() returns listOf<Int>()
@@ -660,51 +619,6 @@ fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { rec
     record.tags.find { it == tag || it.startsWith("$tag.") } != null
 }
 
-fun Sequence_stripDurationTags_spec() {
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("20000101_0040"))
-        .stripDurationTags().first().tags.contains("+10") returns false
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("20000101_0041"))
-        .stripDurationTags().first().tags.contains("+10") returns false
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("20000101_0039"))
-        .stripDurationTags().first().tags.contains("+10") returns false
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10", "&")),
-         Record("20000101_0040"))
-        .stripDurationTags().first().tags.contains("+10") returns true
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("20000101_0045"))
-        .stripDurationTags().first().tags.contains("+10") returns true
-    sequenceOf(
-         Record("XXXXXXXX_XXXX", tags=listOf("+10")),
-         Record("20000101_0010"))
-        .stripDurationTags().first().tags.contains("+10") returns true
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+10")),
-         Record("XXXXXXXX_XXXX"))
-        .stripDurationTags().first().tags.contains("+10") returns true
-}
-fun Sequence<Record>.stripDurationTags(): Sequence<Record> = pairs().map { (first, second) ->
-    val duration = first.getTaggedDuration() ?: 0
-    if (duration > 0
-            && second != null
-            && first.isExact() && second.isExact()
-            && first.tags.find { it.startsWith("&") } == null
-            && Math.abs(MINUTES.between(first.getTime().plusMinutes(duration.toLong()),
-                                        second.getTime())) < MIN_GAP_MINUTES) {
-        first.copy(tags = first.tags.filterNot { it.matches(Regex("\\+[0-9]+")) })
-    } else {
-        first
-    }
-}
-val MIN_GAP_MINUTES = 2
-
 fun Sequence<Record>.stripStopTags(): Sequence<Record> = pairs().map { (first, second) ->
     if (second != null && first.getTaggedStopTime() == second.getStartTime()) {
         first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
@@ -762,34 +676,6 @@ fun Record.sortTags(): Record {
     })
 }
 val sortTagsOrder = "/+#!=>@:&"
-
-fun Record_convertDurationToStopTime_spec() {
-    Record("20250103_1600").convertDurationToStopTime() returns Record("20250103_1600")
-    Record("20250103_1600", tags=listOf("@brisbane")).convertDurationToStopTime() returns
-        Record("20250103_1600", tags=listOf("@brisbane"))
-    Record("20250103_1600", tags=listOf("+15")).convertDurationToStopTime() returns
-        Record("20250103_1600", tags=listOf("+1615"))
-    Record("20250103_2300", tags=listOf("+75")).convertDurationToStopTime() returns
-        Record("20250103_2300", tags=listOf("+0015"))
-    Record("20250103_1600", tags=listOf("+1615")).convertDurationToStopTime() returns
-        Record("20250103_1600", tags=listOf("+1615"))
-    Record("20250103_XXXX", tags=listOf("+15")).convertDurationToStopTime() returns
-        Record("20250103_XXXX", tags=listOf("+0015"))
-}
-fun Record.convertDurationToStopTime(): Record {
-    val durationTag = tags.filter { it.matches(convertDurationRegex) }.lastOrNull()
-    if (durationTag == null) return this
-    return this.copy(tags = tags.map {
-        if (it.matches(convertDurationRegex)) {
-            this.getStartTime().plusMinutes(durationTag.substring(1).toLong())
-                .format(stopTimeFormat)
-        } else {
-            it
-        }
-    })
-}
-val convertDurationRegex = Regex("(\\+[0-9][0-9]?[0-9]?)") // three digits or less
-val stopTimeFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 fun String_compareSeq_spec() {
     "19990102_1000".compareSeq("19990102_0999") returns 1
