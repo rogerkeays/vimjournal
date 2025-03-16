@@ -173,11 +173,9 @@ fun main(args: Array<String>) {
     usage.put("strip-stops", "remove stop tags where there is no gap between records")
     if (c == "strip-stops") parse().stripStopTags().forEach { it.print() }
 
-    usage.put("sum", "sum the duration in minutes of all records")
-    if (c == "sum") println(parse().withDurations().sumOf { it.duration })
-
-    usage.put("sum-tag", "sum the duration in minutes of all records with the given tag")
-    if (c == "sum-tag") println(parse().withDurations().filter { it.tags.contains(args[1]) }.sumOf { it.duration })
+    usage.put("sum [tag]", "sum the duration in minutes of records with the given tag, or all records if no tag is given")
+    if (c == "sum" && args.size == 1) println(parse().withDurations().sumOf { it.duration })
+    if (c == "sum" && args.size == 2) println(parse().withDurations().filter { it.tags.contains(args[1]) }.sumOf { it.duration })
 
     usage.put("sum-durations-by-tag tag", "sum the duration in minutes of records matching `tag`, grouped by tag")
     if (c == "sum-durations-by-tag") parse().sumDurationsByTagFor(args[1]).entries.forEach {
