@@ -17,27 +17,14 @@ fun main(args: Array<String>) {
     val c = if (args.isNotEmpty()) args[0] else "help"
 
     usage.put("add-stops", "add missing stop times from sequential records")
-    if (c == "add-stops") {
-        var prev = Record(ZERO_SEQ, tags=listOf("+0000"))
-        parse().filter { it.isForegroundAction() }.forEach {
-            if (!prev.isExact() || prev.isInstant() || prev.hasStopTag()) {
-                println(prev.formatHeader())
-            } else if (prev.isExact() && it.isExact()) {
-                println("${prev.formatHeader()} +${it.seq.drop(9)}")
-            } else {
-                throw AssertionError("Next record not exact: ${prev.formatHeader()}")
-            }
-            prev = it
-        }
-        println(prev.formatHeader())
-    }
+    if (c == "add-stops") parse().withDurations().filter(args).forEach { println("${it.format()} ${it.formatStopTag()}") }
 
     usage.put("count [tag]", "count the records matching the given tag, or all records if no tag is given")
     if (c == "count") println(parse().filter(args).count())
 
     usage.put("diff-durations file1 file2", "compare files record by record, outputting records where the duration differs")
-    if (c == "diff-durations") File(args[1]).parse().zip(File(args[2]).parse()).forEach {
-         if (Math.abs(it.first.getCalculatedDuration() - it.second.getCalculatedDuration()) > 0) {
+    if (c == "diff-durations") File(args[1]).parse().withDurations().zip(File(args[2]).parse().withDurations()).forEach {
+         if (it.first.duration != it.second.duration) {
             println(it.first.formatHeader())
             println(it.second.formatHeader())
             println()
@@ -137,11 +124,12 @@ fun main(args: Array<String>) {
 
     usage.put("patch-times file patch_file", "update start and stop times in `file` to match records in `patch_file`, where they differ by one minute or less")
     if (c == "patch-times") {
-        val patches = File(args[2]).parse().iterator()
+        val patches = File(args[2]).parse().withDurations().iterator()
         var patch = patches.next()
-        File(args[1]).parse().forEach() {
-            if (it.isExact() && minutesBetween(it.getStartTime(), patch.getStartTime()) <= 1) {
-                it.replaceStop(patch.formatStopTag()).copy(seq = patch.seq).print()
+        File(args[1]).parse().withDurations().forEach() {
+            if (it.isExact() && minutesBetween(it.getStartTime(), patch.getStartTime()) <= 1 &&
+                    minutesBetween(it.getStopTime(), patch.getStopTime()) <= 1) {
+                it.replaceStopTag(patch.formatStopTag()).copy(seq = patch.seq).print()
                 if (patches.hasNext()) patch = patches.next()
             } else {
                 it.print()
@@ -413,7 +401,7 @@ fun Record.getTaggedStopTime(): LocalDateTime {
 }
 val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
-fun Record.getCalculatedDuration(): Long = getStartTime().until(getTaggedStopTime(), MINUTES)
+fun Record.getStopTime(): LocalDateTime = getStartTime().plusMinutes(duration.toLong())
 
 fun Sequence_pairs_spec() {
     sequenceOf<Int>().pairs().toList() returns listOf<Int>()
@@ -765,8 +753,8 @@ val instantRegex = Regex("/.*!")
 
 fun minutesBetween(a: LocalDateTime, b: LocalDateTime): Long = Math.abs(MINUTES.between(a, b))
 
-fun Record.removeStop(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
-fun Record.replaceStop(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
+fun Record.removeStopTag(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
+fun Record.replaceStopTag(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
 fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
