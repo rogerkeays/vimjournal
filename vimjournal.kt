@@ -16,9 +16,6 @@ fun main(args: Array<String>) {
     val usage = LinkedHashMap<String, String>()
     val c = if (args.isNotEmpty()) args[0] else "help"
 
-    usage.put("add-stops", "add missing stop times from sequential records")
-    if (c == "add-stops") parse().withDurations().filter(args).forEach { println("${it.format()} ${it.formatStopTag()}") }
-
     usage.put("count [tag]", "count the records matching the given tag, or all records if no tag is given")
     if (c == "count") println(parse().filter(args).count())
 
@@ -758,9 +755,9 @@ val STOP_REGEX = Regex("(\\+[0-9]{4})")
 
 fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
 fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
-fun Record.formatAsTimelog(): String = "${seq} !| ${formatStopTag().drop(1)} ${summary.lowercase()}"
-fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
 fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
+fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
+fun Record.formatAsTimelog(): String = "${seq} !| ${summary.lowercase()} ${formatStopTag()}"
 fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
 
 // simple test functions, since kotlin.test is not on the default classpath
