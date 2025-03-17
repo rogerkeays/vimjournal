@@ -106,10 +106,37 @@ fun main(args: Array<String>) {
 
     usage.put("find-overlaps", "output records whose stop time overlaps the next records start time")
     if (c == "find-overlaps") {
-        var prev = Record(ZERO_SEQ)
-        parse().filter { it.isForegroundAction() }.forEach {
-            if (it.isExact() && it.getStartTime() < prev.getTaggedStopTime()) println(prev.formatHeader())
-            prev = it
+        val peeks = LinkedList<Record>()
+        val i = parse().withDurations().filter { it.isAction() }.iterator()
+        while (peeks.isNotEmpty() || i.hasNext()) {
+            val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
+            val numAnds = current.countAnds()
+            var next: Record? = null
+
+            // look through the window
+            for (record in peeks) {
+                if (record.countAnds() <= numAnds) {
+                    next = record
+                    break
+                }
+            }
+
+            // look down the sequence
+            if (next == null) {
+                while (i.hasNext()) {
+                    val record = i.next()
+                    peeks.add(record)
+                    if (record.countAnds() <= numAnds) {
+                        next = record
+                        break
+                    }
+                }
+            }
+            if (next != null && next.isExact() && next.getStartTime() < current.getStopTime()) {
+                println(current.formatHeader())
+                println(next.formatHeader())
+                println()
+            }
         }
     }
 
@@ -741,7 +768,11 @@ fun Record.isIndented(): Boolean = summary.startsWith(" ")
 fun Record.isAction(): Boolean = !summary.startsWith(" ")
 fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
 fun Record.isBackgroundAction(): Boolean = isAction() && summary.startsWith("& ") || summary.startsWith("and ")
-fun Record.countAnds(): Int = if (summary.startsWith("& ") || summary.startsWith("and ")) 1 else 0
+fun Record.countAnds(): Int  {
+    if (summary.startsWith("and and ") || summary.startsWith("& & ")) return 2
+    if (summary.startsWith("and ") || summary.startsWith("& ")) return 1
+    return 0
+}
 
 fun Record_isInstant_spec() {
     Record("20000101_0000").isInstant() returns false
