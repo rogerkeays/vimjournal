@@ -169,11 +169,15 @@ fun main(args: Array<String>) {
     if (c == "test") test()
 
     usage.put("help", "print usage")
-    if (c == "help" || usage.keys.find { it.startsWith(c) } == null) {
-        err.println("\nUsage: vimjournal.kt [command] [parameters]\n")
+    if (c == "help") {
+        err.println("\nUsage: vimjournal.kt command [parameters]\n")
         err.println("Unless specified, all commands read from stdin and write to stdout.\n")
         usage.forEach { err.println(String.format("  %-30s %s", it.key, it.value)) }
         err.println()
+    }
+
+    if (usage.keys.none { c == it.takeWhile { it != ' ' }}) {
+       err.println("Command `${c}` not recognised. Run `vimjournal.kt help` for usage.")
     }
 }
 
