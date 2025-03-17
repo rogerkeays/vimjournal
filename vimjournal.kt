@@ -105,38 +105,11 @@ fun main(args: Array<String>) {
     }
 
     usage.put("find-overlaps", "output records whose stop time overlaps the next records start time")
-    if (c == "find-overlaps") {
-        val peeks = LinkedList<Record>()
-        val i = parse().withDurations().filter { it.isAction() }.iterator()
-        while (peeks.isNotEmpty() || i.hasNext()) {
-            val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
-            val numAnds = current.countAnds()
-            var next: Record? = null
-
-            // look through the window
-            for (record in peeks) {
-                if (record.countAnds() <= numAnds) {
-                    next = record
-                    break
-                }
-            }
-
-            // look down the sequence
-            if (next == null) {
-                while (i.hasNext()) {
-                    val record = i.next()
-                    peeks.add(record)
-                    if (record.countAnds() <= numAnds) {
-                        next = record
-                        break
-                    }
-                }
-            }
-            if (next != null && next.isExact() && next.getStartTime() < current.getStopTime()) {
-                println(current.formatHeader())
-                println(next.formatHeader())
-                println()
-            }
+    if (c == "find-overlaps") parse().withDurations().filter { it.isForegroundAction() }.pairs().forEach { (a, b) ->
+        if (b != null && b.isExact() && a.isExact() && b.getStartTime() < a.getStopTime()) {
+            println(a.formatHeader())
+            println(b.formatHeader())
+            println()
         }
     }
 
