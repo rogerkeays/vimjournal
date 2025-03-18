@@ -265,15 +265,6 @@ fun String_parseTags_spec() {
     "##foo !bar ".parseTags() returns listOf("##foo", "!bar")
     "#foo bar !baz".parseTags() returns listOf("#foo bar", "!baz")
     "#foo '#bar !baz".parseTags() returns listOf("#foo '#bar", "!baz")
-    "& #foo !bar".parseTags() returns listOf("&", "#foo", "!bar")
-    "&  #foo !bar".parseTags() returns listOf("&", "#foo", "!bar")
-    "&1 #foo !bar".parseTags() returns listOf("&1", "#foo", "!bar")
-    "#foo & !bar".parseTags() returns listOf("#foo", "&", "!bar")
-    "#foo & bar".parseTags() returns listOf("#foo & bar")
-    "#foo & bar !baz".parseTags() returns listOf("#foo & bar","!baz")
-    "#foo bar !baz &".parseTags() returns listOf("#foo bar", "!baz", "&")
-    "#foo bar !baz & ".parseTags() returns listOf("#foo bar", "!baz", "&")
-    "#foo bar !baz &2".parseTags() returns listOf("#foo bar", "!baz", "&2")
     "#foo bar !baz :https://wikipedia.org/foo".parseTags() returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
     "#foo bar :https://wikipedia.org/foo !baz".parseTags() returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
 }
@@ -284,7 +275,7 @@ fun String.parseTags(): List<String> {
         slice(it.range.start..stop).trim()
     }
 }
-val tagChars = "/+#=!>@:&"
+val tagChars = "/+#=!>@:"
 val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
 fun String_parseRecord_spec() {
@@ -300,12 +291,6 @@ fun String_parseRecord_spec() {
     "XXXXXXXX_XXXX >| hello world #tag '!bar".parseRecord().summary returns "hello world"
     "XXXXXXXX_XXXX >| hello world '#tag !bar".parseRecord().summary returns "hello world '#tag"
     "XXXXXXXX_XXXX >| hello world '#tag' !bar".parseRecord().summary returns "hello world '#tag'"
-    "XXXXXXXX_XXXX >| hello world &".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world & #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world &1 #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world & '#tag !bar".parseRecord().summary returns "hello world & '#tag"
-    "XXXXXXXX_XXXX >| hello world #tag !bar &".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world #tag !bar &1".parseRecord().summary returns "hello world"
     "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
     "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
@@ -704,7 +689,7 @@ fun Record.sortTags(): Record {
         sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
     })
 }
-val sortTagsOrder = "/+#!=>@:&"
+val sortTagsOrder = "/+#!=>@:"
 
 fun String_compareSeq_spec() {
     "19990102_1000".compareSeq("19990102_0999") returns 1

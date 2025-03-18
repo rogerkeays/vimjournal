@@ -12,7 +12,6 @@
 "   > context
 "   @ place
 "   : data
-"   & skips
 "
 autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
@@ -56,7 +55,7 @@ autocmd BufRead *.log syn match Comments `^//.*$`
 autocmd BufRead *.log syn match Comments ` // .*$`
 
 " space then a tag character followed by a non-space, another tag or the end of line
-autocmd BufRead *.log syn match Tags ` [/+#=!>@:&]\([^ |]\| \+[/+#=!>@:&]\| *$\).*` contained
+autocmd BufRead *.log syn match Tags ` [/+#=!>@:]\([^ |]\| \+[/+#=!>@:]\| *$\).*` contained
 
 autocmd FileType vimjournal hi Bar ctermfg=darkgrey
 autocmd FileType vimjournal hi Date ctermfg=darkgrey

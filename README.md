@@ -140,7 +140,6 @@ The start of a new record indicates the end of the last one.
     >        record  context
     @        record  place
     :        record  data, url
-    &n       record  skips (used to indicate a record's duration overlaps the `n` following records)
 
 All tags support a reverse-hierarchy syntax using `:` like this: `@melbourne:australia`, `@sydney:australia`, `@opera-house:sydney:australia`. This is useful for project tags: `=unchecked:jamaica`, `=fluent:jamaica` etc. A reverse-hierarchy is used so we can use code-completion instead of writing them out in full.
 
