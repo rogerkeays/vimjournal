@@ -1,7 +1,7 @@
 //usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && kotlin -cp $0.jar VimjournalKt "$@"; exit 0
 // vim: foldmethod=expr foldexpr=getline(v\:lnum+1)[0\:3]=='fun\ '?'<1'\:1 foldtext=getline(v\:foldstart) fillchars=fold\:\ 
 
-import java.io.BufferedReader
+import java.io.InputStream
 import java.io.File
 import java.lang.System.err
 import java.time.LocalDateTime
@@ -201,7 +201,7 @@ fun main(args: Array<String>) {
     }
 }
 
-fun parse_spec() {
+fun InputStream_parse_spec() {
     "XXXXXXXX_XXXX >| hello world".parse().first().summary returns "hello world"
     "XXXXXXXX_XXXX >| hello world\nbody\n".parse().first().body returns "body"
     "XXXXXXXX_XXXX >| hello world\n\n  body\n".parse().first().body returns "  body"
@@ -214,7 +214,8 @@ fun parse_spec() {
     "XXXXXXXX_XXXX >| hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
     "// vim: modeline\nXXXXXXXX_XXXX >| hello world\nbody\n".parse().first().summary returns "hello world"
 }
-fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Record> {
+fun InputStream.parse(): Sequence<Record> {
+    val input = reader().buffered()
     return generateSequence {
         var header = input.readLine()
         while (header != null && !header.isHeader()) {
@@ -233,7 +234,7 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Record
     }
 }
 
-fun File.parse() = parse(reader().buffered())
+fun File.parse(): Sequence<Record> = inputStream().parse()
 
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
@@ -721,7 +722,7 @@ fun String_isHeader_spec() {
 }
 fun String.isHeader(): Boolean = matches(headerRegex);
 
-fun String.parse() = parse(reader().buffered())
+fun String.parse(): Sequence<Record> = byteInputStream().parse()
 
 fun String_parseTags_spec() {
     "".parseTags().isEmpty() returns true
@@ -806,6 +807,8 @@ fun makeExactSeq(s: String) : String {
 }
 
 fun minutesBetween(a: LocalDateTime, b: LocalDateTime): Long = Math.abs(MINUTES.between(a, b))
+
+fun parse(): Sequence<Record> = System.`in`.parse()
 
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
 infix fun Any?.returns(result: Any?) { if (this != result) throw AssertionError("Expected: $result, got $this") }
