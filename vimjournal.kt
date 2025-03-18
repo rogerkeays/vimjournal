@@ -106,13 +106,7 @@ fun main(args: Array<String>) {
     }
 
     usage.put("find-overlaps", "output records whose stop time overlaps the next records start time")
-    if (c == "find-overlaps") parse().withDurations().filter { it.isForegroundAction() }.pairs().forEach { (a, b) ->
-        if (b != null && b.isExact() && a.isExact() && b.getStartTime() < a.getStopTime()) {
-            println(a.formatHeader())
-            println(b.formatHeader())
-            println()
-        }
-    }
+    if (c == "find-overlaps") parse().withDurations().findOverlaps()
 
     usage.put("make-flashcards [tag]", "export records as png flashcards for nokia phones (requires ImageMagick, writes files to current dir)")
     if (c == "make-flashcards") parse().filter(args).forEachIndexed { i, it -> it.makeFlashcard(i) }
@@ -640,6 +634,42 @@ fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs()
     }
 }
 val MIN_GAP = 2
+
+fun Sequence<Record>.findOverlaps(): Unit {
+    val peeks = LinkedList<Record>()
+    val i = filter { it.isAction() }.iterator()
+    while (peeks.isNotEmpty() || i.hasNext()) {
+        val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
+        if (current.summary.endsWith("...")) continue
+        val numAnds = current.countAnds()
+        var next: Record? = null
+
+        // look through the window
+        for (record in peeks) {
+            if (record.countAnds() <= numAnds) {
+                next = record
+                break
+            }
+        }
+
+        // look down the sequence
+        if (next == null) {
+            while (i.hasNext()) {
+                val record = i.next()
+                peeks.add(record)
+                if (record.countAnds() <= numAnds) {
+                    next = record
+                    break
+                }
+            }
+        }
+        if (next != null && next.isExact() && next.getStartTime() < current.getStopTime()) {
+            println(current.formatHeader())
+            println(next.formatHeader())
+            println()
+        }
+    }
+}
 
 fun String_wrap_spec() {
     "12345".wrap(1) returns "1\n2\n3\n4\n5"
