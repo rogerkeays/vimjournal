@@ -36,19 +36,7 @@ data class Record(
         val tags: List<String> = listOf(),
         val body: String = "",
         val exactSeq: String = makeExactSeq(seq),
-        val duration: Int = 0) {
-
-    val priority = when (rating) {
-        "*" -> 1
-        "+" -> 2
-        "=" -> 3
-        "~" -> 3
-        "-" -> 4
-        "x" -> 5
-        "." -> 5
-        else -> 6
-    }
-}
+        val duration: Int = 0)
 
 fun main(args: Array<String>) {
     val usage = LinkedHashMap<String, String>()
@@ -181,7 +169,7 @@ fun main(args: Array<String>) {
     if (c == "sort-by-summary") parse().sortedBy { it.summary }.forEach { it.print() }
 
     usage.put("sort-by-rating", "sort records by rating")
-    if (c == "sort-by-rating") parse().sortedBy { it.priority }.forEach { it.print() }
+    if (c == "sort-by-rating") parse().sortedBy { it.getPriority() }.forEach { it.print() }
 
     usage.put("sort-tags", "sort record tags in the following order: ${sortTagsOrder}")
     if (c == "sort-tags") parse().forEach { it.sortTags().print() }
@@ -291,6 +279,17 @@ fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
 fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
 
 fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
+
+fun Record.getPriority() = when (rating) {
+    "*" -> 1
+    "+" -> 2
+    "=" -> 3
+    "~" -> 3
+    "-" -> 4
+    "x" -> 5
+    "." -> 5
+    else -> 6
+}
 
 fun Record_getTaggedStopTime_spec() {
     Record("19990101_0000").getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
