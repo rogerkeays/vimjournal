@@ -412,7 +412,9 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     sequenceOf(1, 2, 3).pairs().toList() returns listOf(Pair(1, 2), Pair(2, 3), Pair(3, null))
 }
 
-fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
+fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> {
+    return if (args.size > 1) filter { it.tags.contains(args[1]) } else this
+}
 
 fun Sequence<Record>.findOverlaps(): Unit {
     val peeks = LinkedList<Record>()
@@ -450,13 +452,15 @@ fun Sequence<Record>.findOverlaps(): Unit {
     }
 }
 
-fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs().map { (first, second) ->
-    if (second != null && first.isExact() && second.isExact() && first.duration != 0 &&
-            first.countAnds() >= second.countAnds() &&
-            minutesBetween(first.getStopTime(), second.getStartTime()) <= MIN_GAP) {
-        first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
-    } else {
-        first
+fun Sequence<Record>.stripStopTags(): Sequence<Record> {
+    return withDurations().pairs().map { (first, second) ->
+        if (second != null && first.isExact() && second.isExact() && first.duration != 0 &&
+                first.countAnds() >= second.countAnds() &&
+                minutesBetween(first.getStopTime(), second.getStartTime()) <= MIN_GAP) {
+            first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
+        } else {
+            first
+        }
     }
 } fun Sequence_Record__stripStopTags_spec() {
     sequenceOf(
@@ -552,8 +556,8 @@ fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): 
         .sumDurationsByTag()["=p3"] returns 150
 }
 
-fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { record ->
-    record.tags.find { it.startsWith(tagChar) } != null
+fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char): Map<String, Int> {
+    return sumDurationsByTag { record -> record.tags.find { it.startsWith(tagChar) } != null }
 } fun Sequence_Record__sumDurationsByTagFor_spec() {
     sequenceOf(
          Record("20000101_0000", tags=listOf("=p1")))
@@ -589,8 +593,8 @@ fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { r
         .sumDurationsByTagFor('=')["/code"] returns 55
 }
 
-fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { record ->
-    record.tags.find { it == tag || it.startsWith("$tag.") } != null
+fun Sequence<Record>.sumDurationsByTagFor(tag: String): Map<String, Int> {
+    return sumDurationsByTag { record -> record.tags.find { it == tag || it.startsWith("$tag.") } != null }
 }
 
 fun Sequence<Record>.withDurations(): Sequence<Record> {
