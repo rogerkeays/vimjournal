@@ -65,7 +65,7 @@ fun main(args: Array<String>) {
     if (c == "format-tsv") parse().filter(args).forEach { println(it.formatHeaderAsTSV()) }
 
     usage.put("filter-from seq", "output records after `seq`, inclusive (presumes input is presorted)")
-    if (c == "filter-from") parse().dropWhile { it.exactSeq < args[1] }.forEach { it.print() }
+    if (c == "filter-from") parse().dropWhile { it.seq < args[1] }.forEach { it.print() }
 
     usage.put("filter-indented", "output records whose summary begins with a space character")
     if (c == "filter-indented") parse().filter { it.isIndented() }.forEach { it.print() }
@@ -85,7 +85,7 @@ fun main(args: Array<String>) {
     }.forEach { it.print() }
 
     usage.put("filter-to seq", "output records before `seq`, inclusive (presumes input is presorted)")
-    if (c == "filter-to") parse().takeWhile { it.exactSeq <= args[1] }.forEach { it.print() }
+    if (c == "filter-to") parse().takeWhile { it.seq <= args[1] }.forEach { it.print() }
 
     usage.put("find-anachronisms", "find records which are out of order")
     if (c == "find-anachronisms") {
