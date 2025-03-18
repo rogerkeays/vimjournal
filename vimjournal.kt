@@ -1,6 +1,7 @@
 //usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && kotlin -cp $0.jar VimjournalKt "$@"; exit 0
 // vim: foldmethod=expr foldexpr=getline(v\:lnum)[0\:3]=='fun\ '?'>1'\:1 foldtext=getline(v\:foldstart) fillchars=fold\:\ 
 
+// dependencies
 import java.io.InputStream
 import java.io.File
 import java.lang.System.err
@@ -28,6 +29,7 @@ val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
+// data structures
 data class Record(
         val seq: String,
         val summary: String = "",
@@ -37,6 +39,7 @@ data class Record(
         val exactSeq: String = makeExactSeq(seq),
         val duration: Int = 0)
 
+// functions
 fun main(args: Array<String>) {
     val usage = LinkedHashMap<String, String>()
     val c = if (args.isNotEmpty()) args[0] else "help"
