@@ -13,6 +13,43 @@ import java.util.LinkedList
 import java.util.LinkedHashMap
 import java.util.NoSuchElementException
 
+// constants
+val MIN_GAP = 2
+val ratingChars = "->x=~+*.!"
+val tagChars = "/+#=!>@:"
+val sortTagsOrder = "/+#!=>@:"
+val ZERO_SEQ = "00010101_0000"
+val linefeed = System.getProperty("line.separator")
+val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
+val excludeTagRegex = Regex("^\\+[0-9]+")
+val headerRegex = Regex("^[0-9X_]{13} [$ratingChars]\\|.*\n?$")
+val instantRegex = Regex("/.*!")
+val STOP_REGEX = Regex("(\\+[0-9]{4})")
+val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
+val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
+val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
+
+data class Record(
+        val seq: String,
+        val summary: String = "",
+        val rating: String = ">",
+        val tags: List<String> = listOf(),
+        val body: String = "",
+        val exactSeq: String = makeExactSeq(seq),
+        val duration: Int = 0) {
+
+    val priority = when (rating) {
+        "*" -> 1
+        "+" -> 2
+        "=" -> 3
+        "~" -> 3
+        "-" -> 4
+        "x" -> 5
+        "." -> 5
+        else -> 6
+    }
+}
+
 fun main(args: Array<String>) {
     val usage = LinkedHashMap<String, String>()
     val c = if (args.isNotEmpty()) args[0] else "help"
@@ -176,136 +213,7 @@ fun main(args: Array<String>) {
     }
 }
 
-data class Record(
-        val seq: String,
-        val summary: String = "",
-        val rating: String = ">",
-        val tags: List<String> = listOf(),
-        val body: String = "",
-        val exactSeq: String = makeExactSeq(seq),
-        val duration: Int = 0) {
-
-    val priority = when (rating) {
-        "*" -> 1
-        "+" -> 2
-        "=" -> 3
-        "~" -> 3
-        "-" -> 4
-        "x" -> 5
-        "." -> 5
-        else -> 6
-    }
-}
-val ZERO_SEQ = "00010101_0000"
-
-fun Record_format_spec() {
-    Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
-}
-fun Record.format() = buildString {
-    append(formatHeader())
-    if (!body.isBlank()) append("\n\n").append(body).append('\n')
-}
-fun Record.print() = println(format())
-
-fun Record_formatHeader_spec() {
-    Record("XXXXXXXX_XXXX", "").formatHeader() returns "XXXXXXXX_XXXX >|"
-    Record("XXXXXXXX_XXXX", "hello world").formatHeader() returns "XXXXXXXX_XXXX >| hello world"
-    Record("XXXXXXXX_XXXX", "hello world", rating="+").formatHeader() returns "XXXXXXXX_XXXX +| hello world"
-    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
-    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| #foo !bar"
-}
-fun Record.formatHeader() = buildString {
-    append(seq).append(' ')
-    append(rating).append('|')
-    if (!summary.isBlank()) append(' ').append(summary)
-    if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
-}
-fun Record.formatHeaderAsTSV() = buildString {
-    append(seq).append('\t')
-    append(rating).append('\t')
-    if (!summary.isBlank()) append('\t').append(summary)
-    if (!tags.isEmpty()) append(tags.joinToString("\t", "\t"))
-}
-
-fun String_isHeader_spec() {
-    "00000000_0000 >|".isHeader() returns true
-    "0000XXXX_XXXX >|".isHeader() returns true
-    "0000XXXX_YYYY >|".isHeader() returns false
-    "20210120_2210 >|".isHeader() returns true
-    "20210120_2210 *|".isHeader() returns true
-    "20210120_2210 >| ".isHeader() returns true
-    "20210120_2210 >| hello world".isHeader() returns true
-    "20210120_2210 >| hello world\n".isHeader() returns true
-    "20210120_2210 >| hello world #truth".isHeader() returns true
-    "20210120_2210!>| hello world".isHeader() returns false
-    "20210120_2210>| hello world".isHeader() returns false
-    "20210120_2210   hello world".isHeader() returns false
-    "202101202210  >| hello world".isHeader() returns false
-    "foo".isHeader() returns false
-    "".isHeader() returns false
-}
-fun String.isHeader(): Boolean = matches(headerRegex);
-val ratingChars = "->x=~+*.!"
-val headerRegex = Regex("^[0-9X_]{13} [$ratingChars]\\|.*\n?$")
-
-fun String_parseTags_spec() {
-    "".parseTags().isEmpty() returns true
-    "#foo".parseTags() returns listOf("#foo")
-    "nontag #foo".parseTags() returns listOf("#foo")
-    "#foo !bar".parseTags() returns listOf("#foo", "!bar")
-    "#foo !bar ".parseTags() returns listOf("#foo", "!bar")
-    " #foo !bar".parseTags() returns listOf("#foo", "!bar")
-    "#foo   !bar ".parseTags() returns listOf("#foo", "!bar")
-    "##foo !bar ".parseTags() returns listOf("##foo", "!bar")
-    "#foo bar !baz".parseTags() returns listOf("#foo bar", "!baz")
-    "#foo '#bar !baz".parseTags() returns listOf("#foo '#bar", "!baz")
-    "#foo bar !baz :https://wikipedia.org/foo".parseTags() returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
-    "#foo bar :https://wikipedia.org/foo !baz".parseTags() returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
-}
-fun String.parseTags(): List<String> {
-    var matches = tagStartRegex.findAll(this).toList()
-    return matches.mapIndexed { i, it ->
-        var stop = if (i < matches.lastIndex) matches[i + 1].range.start - 1 else lastIndex
-        slice(it.range.start..stop).trim()
-    }
-}
-val tagChars = "/+#=!>@:"
-val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
-
-fun String_parseRecord_spec() {
-    "XXXXXXXX_XXXX >|".parseRecord() returns Record("XXXXXXXX_XXXX")
-    "XXXXXXXX_XXXX +|".parseRecord() returns Record("XXXXXXXX_XXXX", rating="+")
-    "XXXXXXXX_XXXX >| hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
-    "XXXXXXXX_XXXX >| hello world ".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
-    "XXXXXXXX_XXXX >| hello world!".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world!")
-    "XXXXXXXX_XXXX >|  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world")
-    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().tags returns listOf("#tag", "!bar")
-    "XXXXXXXX_XXXX >| hello world  #tag !bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world #tag '!bar".parseRecord().summary returns "hello world"
-    "XXXXXXXX_XXXX >| hello world '#tag !bar".parseRecord().summary returns "hello world '#tag"
-    "XXXXXXXX_XXXX >| hello world '#tag' !bar".parseRecord().summary returns "hello world '#tag'"
-    "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
-    "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
-    "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
-}
-fun String.parseRecord(body: String = ""): Record {
-    val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
-    val seq = slice(0..12)
-    val record = Record(
-        seq = seq,
-        summary = slice(17..tagIndex).trimEnd(),
-        rating = slice(14..14).trim(),
-        tags = drop(tagIndex + 1).parseTags(),
-        body = body,
-        exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
-    )
-    lastSeq = record.exactSeq // or record.getTaggedStopTime()?
-    return record
-}
-var lastSeq = ZERO_SEQ
-
-fun String_parse_spec() {
+fun parse_spec() {
     "XXXXXXXX_XXXX >| hello world".parse().first().summary returns "hello world"
     "XXXXXXXX_XXXX >| hello world\nbody\n".parse().first().body returns "body"
     "XXXXXXXX_XXXX >| hello world\n\n  body\n".parse().first().body returns "  body"
@@ -318,8 +226,6 @@ fun String_parse_spec() {
     "XXXXXXXX_XXXX >| hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
     "// vim: modeline\nXXXXXXXX_XXXX >| hello world\nbody\n".parse().first().summary returns "hello world"
 }
-fun File.parse() = parse(reader().buffered())
-fun String.parse() = parse(reader().buffered())
 fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Record> {
     return generateSequence {
         var header = input.readLine()
@@ -338,29 +244,53 @@ fun parse(input: BufferedReader = System.`in`.bufferedReader()): Sequence<Record
         if (header != null) header.parseRecord(body.trim('\n')) else null
     }
 }
-val linefeed = System.getProperty("line.separator")
 
-fun Record_isExact_spec() {
-    Record("20000101_0000").isExact() returns true
-    Record("20000101_XXXX").isExact() returns false
-    Record("XXXXXXXX_XXXX").isExact() returns false
-}
-fun Record.isExact() = seq.matches(exactDateTimeRegex)
-val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
+fun File.parse() = parse(reader().buffered())
 
-fun Record_getTime_spec() {
-    Record("20000101_0000").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
-    Record("20000101_XXXX").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
-    Record("XXXXXXXX_XXXX").getTime() returns LocalDateTime.of(1, 1, 1, 0, 0)
-}
-fun Record.getTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
-val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
+fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-// inexact dates are treated as starting at midnight so that stop times can be expressed as a duration
-fun Record.getStartTime(): LocalDateTime {
-    val time = getTime()
-    return if (isExact()) time else LocalDateTime.of(time.getYear(), time.getMonth(), time.getDayOfMonth(), 0, 0, 0)
+fun Record.countAnds(): Int  {
+    if (summary.startsWith("and and ") || summary.startsWith("&& ")) return 2
+    if (summary.startsWith("and ") || summary.startsWith("& ")) return 1
+    return 0
 }
+
+fun Record_format_spec() {
+    Record("XXXXXXXX_XXXX", "hello world", body="body").format() returns "XXXXXXXX_XXXX >| hello world\n\nbody\n"
+}
+fun Record.format() = buildString {
+    append(formatHeader())
+    if (!body.isBlank()) append("\n\n").append(body).append('\n')
+}
+
+fun Record.formatAsTimelog(): String = "${seq} !| ${summary.lowercase()} ${formatStopTag()}"
+
+fun Record_formatHeader_spec() {
+    Record("XXXXXXXX_XXXX", "").formatHeader() returns "XXXXXXXX_XXXX >|"
+    Record("XXXXXXXX_XXXX", "hello world").formatHeader() returns "XXXXXXXX_XXXX >| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", rating="+").formatHeader() returns "XXXXXXXX_XXXX +| hello world"
+    Record("XXXXXXXX_XXXX", "hello world", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| hello world #foo !bar"
+    Record("XXXXXXXX_XXXX", tags=listOf("#foo", "!bar")).formatHeader() returns "XXXXXXXX_XXXX >| #foo !bar"
+}
+fun Record.formatHeader() = buildString {
+    append(seq).append(' ')
+    append(rating).append('|')
+    if (!summary.isBlank()) append(' ').append(summary)
+    if (!tags.isEmpty()) append(tags.joinToString(" ", " "))
+}
+
+fun Record.formatHeaderAsTSV() = buildString {
+    append(seq).append('\t')
+    append(rating).append('\t')
+    if (!summary.isBlank()) append('\t').append(summary)
+    if (!tags.isEmpty()) append(tags.joinToString("\t", "\t"))
+}
+
+fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
+
+fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
+
+fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
 
 fun Record_getTaggedStopTime_spec() {
     Record("19990101_0000").getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 0, 0)
@@ -380,11 +310,94 @@ fun Record.getTaggedStopTime(): LocalDateTime {
         LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
     }
 }
-val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
+
+fun Record_getTime_spec() {
+    Record("20000101_0000").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
+    Record("20000101_XXXX").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
+    Record("XXXXXXXX_XXXX").getTime() returns LocalDateTime.of(1, 1, 1, 0, 0)
+}
+fun Record.getTime(): LocalDateTime = LocalDateTime.parse(exactSeq, dateTimeFormat)
+
+fun Record.getStartTime(): LocalDateTime {
+    // inexact dates are treated as starting at midnight so that stop times can be expressed as a duration
+    val time = getTime()
+    return if (isExact()) time else LocalDateTime.of(time.getYear(), time.getMonth(), time.getDayOfMonth(), 0, 0, 0)
+}
 
 fun Record.getStopTime(): LocalDateTime = getStartTime().plusMinutes(duration.toLong())
 
-fun Sequence_pairs_spec() {
+fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
+
+fun Record.isAction(): Boolean = !summary.startsWith(" ")
+
+fun Record.isBackgroundAction(): Boolean = isAction() && summary.startsWith("& ") || summary.startsWith("and ")
+
+fun Record_isExact_spec() {
+    Record("20000101_0000").isExact() returns true
+    Record("20000101_XXXX").isExact() returns false
+    Record("XXXXXXXX_XXXX").isExact() returns false
+}
+fun Record.isExact() = seq.matches(exactDateTimeRegex)
+
+fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
+
+fun Record.isIndented(): Boolean = summary.startsWith(" ")
+
+fun Record_isInstant_spec() {
+    Record("20000101_0000").isInstant() returns false
+    Record("20000101_0000", tags=listOf("/run")).isInstant() returns false
+    Record("20000101_0000", tags=listOf("/run", "+45")).isInstant() returns false
+    Record("20000101_0000", tags=listOf("/fail!")).isInstant() returns true
+    Record("20000101_0000", tags=listOf("@office", "/fail!")).isInstant() returns true
+}
+fun Record.isInstant(): Boolean {
+    tags.forEach { if (it.matches(instantRegex)) return true }
+    return false
+}
+
+fun Record.makeFlashcard(i: Int) {
+    Runtime.getRuntime().exec(arrayOf(
+        "convert", "-size", "240x320", "xc:black",
+        "-font", "FreeMono-Bold", "-pointsize", "24",
+        "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
+        "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
+        "%04d.X00.png".format(i)))
+}
+
+fun Record.makeTextFlashcards(i: Int) {
+    // export a record as a text flashcard suitable for nokia phones
+    File("%04d.txt".format(i)).writeText(seq + "\n" + summary + " " + tags.joinToString(" "))
+    File("%04d.00.txt".format(i)).writeText(seq + "\n" + body)
+}
+
+fun Record.minutesUntil(next: Record): Int {
+    if (!next.isExact()) throw AssertionError("Next record has no start time: ${this}")
+    if (next.getTime() < getTime()) throw AssertionError("Next record is before this one: ${this}")
+    return MINUTES.between(getTime(), next.getTime()).toInt()
+}
+
+fun Record.print() = println(format())
+
+fun Record.removeStopTag(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
+
+fun Record.replaceStopTag(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
+
+fun Record_sortTags_spec() {
+    Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
+    Record("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns
+        Record("XXXXXXXX_XXXX", tags=listOf("@7"))
+    Record("XXXXXXXX_XXXX", tags=listOf("@7", "/1")).sortTags() returns
+        Record("XXXXXXXX_XXXX", tags=listOf("/1", "@7"))
+    Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns
+        Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1"))
+}
+fun Record.sortTags(): Record {
+    return this.copy(tags = tags.sortedWith { a, b ->
+        sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
+    })
+}
+
+fun _T__Sequence__T_pairs_spec() {
     sequenceOf<Int>().pairs().toList() returns listOf<Int>()
     sequenceOf(1).pairs().toList() returns listOf(Pair(1, null))
     sequenceOf(1, 2).pairs().toList() returns listOf(Pair(1, 2), Pair(2, null))
@@ -403,9 +416,193 @@ fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
         }
     }
 }
-fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
-fun Sequence_withDurations_spec() {
+fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
+
+// simple test functions, since kotlin.test is not on the default classpath
+fun Sequence<Record>.findOverlaps(): Unit {
+    val peeks = LinkedList<Record>()
+    val i = filter { it.isAction() }.iterator()
+    while (peeks.isNotEmpty() || i.hasNext()) {
+        val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
+        if (current.summary.endsWith("...")) continue
+        val numAnds = current.countAnds()
+        var next: Record? = null
+
+        // look through the window
+        for (record in peeks) {
+            if (record.countAnds() <= numAnds) {
+                next = record
+                break
+            }
+        }
+
+        // look down the sequence
+        if (next == null) {
+            while (i.hasNext()) {
+                val record = i.next()
+                peeks.add(record)
+                if (record.countAnds() <= numAnds) {
+                    next = record
+                    break
+                }
+            }
+        }
+        if (next != null && next.isExact() && next.getStartTime() < current.getStopTime()) {
+            println(current.formatHeader())
+            println(next.formatHeader())
+            println()
+        }
+    }
+}
+
+fun Sequence_Record__stripStopTags_spec() {
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0040"))
+        .stripStopTags().first().tags.contains("+0040") returns false
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0041"))
+        .stripStopTags().first().tags.contains("+0040") returns false
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0040", "and ..."))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("20000101_0045"))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("XXXXXXXX_XXXX", tags=listOf("+0010")),
+         Record("00010101_0010"))
+        .stripStopTags().first().tags.contains("+0010") returns true
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("+0040")),
+         Record("XXXXXXXX_XXXX"))
+        .stripStopTags().first().tags.contains("+0040") returns true
+    sequenceOf(
+         Record("20000101_2330", tags=listOf("+0000")),
+         Record("XXXXXXXX_XXXX"))
+        .stripStopTags().first().tags.contains("+0000") returns true
+}
+fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs().map { (first, second) ->
+    if (second != null && first.isExact() && second.isExact() && first.duration != 0 &&
+            first.countAnds() >= second.countAnds() &&
+            minutesBetween(first.getStopTime(), second.getStartTime()) <= MIN_GAP) {
+        first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
+    } else {
+        first
+    }
+}
+
+fun Sequence_Record__sumDurationsByTag_spec() {
+    sequenceOf<Record>().sumDurationsByTag() returns mapOf<String, Int>()
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1")))
+        .sumDurationsByTag()["=p1"] returns 0
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTag()["=p1"] returns 15
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTag()["=p2"] returns null
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTag().containsKey("+0015") returns false
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("/code", "=p1")),
+         Record("20000101_0015", tags=listOf("/debug", "=p1")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
+        .sumDurationsByTag()["=p1"] returns 30
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
+         Record("20000101_0145", tags=listOf("/debug", "=p2")),
+         Record("20000101_0230", tags=listOf("/cook")))
+        .sumDurationsByTag()["=p2"] returns 55
+    sequenceOf(
+         Record("20000102_1030", tags=listOf("/wake")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
+         Record("20000102_1115", tags=listOf("/cook")))
+        .sumDurationsByTag()["/wake"] returns 45
+    sequenceOf(
+         Record("20000102_1030", tags=listOf("/wake", "+1035")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
+         Record("20000102_1115", tags=listOf("/cook")))
+        .sumDurationsByTag()["/wake"] returns 5
+    sequenceOf(
+         Record("20000102_1030", tags=listOf("/wake")),
+         Record("20000102_1045", "and ...", tags=listOf("/recall")),
+         Record("20000102_1115", "and ...", tags=listOf("/stretch")),
+         Record("20000102_1145", tags=listOf("/cook")))
+        .sumDurationsByTag()["/wake"] returns 75
+    sequenceOf(
+         Record("20000102_1200", tags=listOf("/code", "=p3")),
+         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
+         Record("20000102_1300", tags=listOf("/cook")))
+        .sumDurationsByTag()["=p3"] returns 90
+    sequenceOf(
+         Record("20000102_1200", tags=listOf("/code", "=p3")),
+         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
+         Record("20000102_1300", "and ...", tags=listOf("/cook")),
+         Record("20000102_1400", tags=listOf("/trawl")))
+        .sumDurationsByTag()["=p3"] returns 150
+}
+fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): Map<String, Int> {
+    var totals = mutableMapOf<String, Int>().toSortedMap()
+    withDurations().filter(filter).forEach {
+        for (tag in it.tags) {
+            if (!tag.matches(excludeTagRegex)) {
+                totals.put(tag, totals.get(tag)?.plus(it.duration) ?: it.duration)
+            }
+        }
+    }
+    return totals;
+}
+
+fun Sequence_Record__sumDurationsByTagFor_spec() {
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1")))
+        .sumDurationsByTagFor("=p1")["=p1"] returns 0
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTagFor("=p1")["=p1"] returns 15
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTagFor("=p2")["=p1"] returns null
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("=p1", "+0015")))
+        .sumDurationsByTagFor("=p1")["=p2"] returns null
+    sequenceOf(
+         Record("20000101_0000", tags=listOf("/code", "=p1")),
+         Record("20000101_0015", tags=listOf("/debug", "=p1")),
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
+        .sumDurationsByTagFor("=p1")["/code"] returns 15
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
+         Record("20000101_0145", tags=listOf("/debug", "=p2.x")),
+         Record("20000101_0230", tags=listOf("/cook")))
+        .sumDurationsByTagFor("=p2")["=p2.x"] returns 45
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
+         Record("20000101_0145", tags=listOf("/debug", "=p2x")),
+         Record("20000101_0230", tags=listOf("/cook")))
+        .sumDurationsByTagFor("=p2")["=p2x"] returns null
+    sequenceOf(
+         Record("20000101_0030", tags=listOf("/code", "+0040", "=p1")),
+         Record("20000101_0145", tags=listOf("/code", "=p2")),
+         Record("20000101_0230", tags=listOf("/cook")))
+        .sumDurationsByTagFor('=')["/code"] returns 55
+}
+fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { record ->
+    record.tags.find { it.startsWith(tagChar) } != null
+}
+
+fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { record ->
+    record.tags.find { it == tag || it.startsWith("$tag.") } != null
+}
+
+fun Sequence_Record__withDurations_spec() {
     sequenceOf<Record>().withDurations().count() returns 0
     sequenceOf(
          Record("20000101_0000"))
@@ -482,245 +679,6 @@ fun Sequence<Record>.withDurations(): Sequence<Record> {
     }
 }
 
-fun Record.minutesUntil(next: Record): Int {
-    if (!next.isExact()) throw AssertionError("Next record has no start time: ${this}")
-    if (next.getTime() < getTime()) throw AssertionError("Next record is before this one: ${this}")
-    return MINUTES.between(getTime(), next.getTime()).toInt()
-}
-
-fun Sequence_sumDurationsByTag_spec() {
-    sequenceOf<Record>().sumDurationsByTag() returns mapOf<String, Int>()
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1")))
-        .sumDurationsByTag()["=p1"] returns 0
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTag()["=p1"] returns 15
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTag()["=p2"] returns null
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTag().containsKey("+0015") returns false
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("/code", "=p1")),
-         Record("20000101_0015", tags=listOf("/debug", "=p1")),
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
-        .sumDurationsByTag()["=p1"] returns 30
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
-         Record("20000101_0145", tags=listOf("/debug", "=p2")),
-         Record("20000101_0230", tags=listOf("/cook")))
-        .sumDurationsByTag()["=p2"] returns 55
-    sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake")),
-         Record("20000102_1045", "and ...", tags=listOf("/recall")),
-         Record("20000102_1115", tags=listOf("/cook")))
-        .sumDurationsByTag()["/wake"] returns 45
-    sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake", "+1035")),
-         Record("20000102_1045", "and ...", tags=listOf("/recall")),
-         Record("20000102_1115", tags=listOf("/cook")))
-        .sumDurationsByTag()["/wake"] returns 5
-    sequenceOf(
-         Record("20000102_1030", tags=listOf("/wake")),
-         Record("20000102_1045", "and ...", tags=listOf("/recall")),
-         Record("20000102_1115", "and ...", tags=listOf("/stretch")),
-         Record("20000102_1145", tags=listOf("/cook")))
-        .sumDurationsByTag()["/wake"] returns 75
-    sequenceOf(
-         Record("20000102_1200", tags=listOf("/code", "=p3")),
-         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
-         Record("20000102_1300", tags=listOf("/cook")))
-        .sumDurationsByTag()["=p3"] returns 90
-    sequenceOf(
-         Record("20000102_1200", tags=listOf("/code", "=p3")),
-         Record("20000102_1230", "and ...", tags=listOf("/search", "=p3")),
-         Record("20000102_1300", "and ...", tags=listOf("/cook")),
-         Record("20000102_1400", tags=listOf("/trawl")))
-        .sumDurationsByTag()["=p3"] returns 150
-}
-fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): Map<String, Int> {
-    var totals = mutableMapOf<String, Int>().toSortedMap()
-    withDurations().filter(filter).forEach {
-        for (tag in it.tags) {
-            if (!tag.matches(excludeTagRegex)) {
-                totals.put(tag, totals.get(tag)?.plus(it.duration) ?: it.duration)
-            }
-        }
-    }
-    return totals;
-}
-val excludeTagRegex = Regex("^\\+[0-9]+")
-
-fun Sequence_sumDurationsByTagFor_spec() {
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1")))
-        .sumDurationsByTagFor("=p1")["=p1"] returns 0
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTagFor("=p1")["=p1"] returns 15
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTagFor("=p2")["=p1"] returns null
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("=p1", "+0015")))
-        .sumDurationsByTagFor("=p1")["=p2"] returns null
-    sequenceOf(
-         Record("20000101_0000", tags=listOf("/code", "=p1")),
-         Record("20000101_0015", tags=listOf("/debug", "=p1")),
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")))
-        .sumDurationsByTagFor("=p1")["/code"] returns 15
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
-         Record("20000101_0145", tags=listOf("/debug", "=p2.x")),
-         Record("20000101_0230", tags=listOf("/cook")))
-        .sumDurationsByTagFor("=p2")["=p2.x"] returns 45
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p2")),
-         Record("20000101_0145", tags=listOf("/debug", "=p2x")),
-         Record("20000101_0230", tags=listOf("/cook")))
-        .sumDurationsByTagFor("=p2")["=p2x"] returns null
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("/code", "+0040", "=p1")),
-         Record("20000101_0145", tags=listOf("/code", "=p2")),
-         Record("20000101_0230", tags=listOf("/cook")))
-        .sumDurationsByTagFor('=')["/code"] returns 55
-}
-fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char) = sumDurationsByTag { record ->
-    record.tags.find { it.startsWith(tagChar) } != null
-}
-fun Sequence<Record>.sumDurationsByTagFor(tag: String) = sumDurationsByTag { record ->
-    record.tags.find { it == tag || it.startsWith("$tag.") } != null
-}
-
-fun Sequence_stripStopTags_spec() {
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+0040")),
-         Record("20000101_0040"))
-        .stripStopTags().first().tags.contains("+0040") returns false
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+0040")),
-         Record("20000101_0041"))
-        .stripStopTags().first().tags.contains("+0040") returns false
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+0040")),
-         Record("20000101_0040", "and ..."))
-        .stripStopTags().first().tags.contains("+0040") returns true
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+0040")),
-         Record("20000101_0045"))
-        .stripStopTags().first().tags.contains("+0040") returns true
-    sequenceOf(
-         Record("XXXXXXXX_XXXX", tags=listOf("+0010")),
-         Record("00010101_0010"))
-        .stripStopTags().first().tags.contains("+0010") returns true
-    sequenceOf(
-         Record("20000101_0030", tags=listOf("+0040")),
-         Record("XXXXXXXX_XXXX"))
-        .stripStopTags().first().tags.contains("+0040") returns true
-    sequenceOf(
-         Record("20000101_2330", tags=listOf("+0000")),
-         Record("XXXXXXXX_XXXX"))
-        .stripStopTags().first().tags.contains("+0000") returns true
-}
-fun Sequence<Record>.stripStopTags(): Sequence<Record> = withDurations().pairs().map { (first, second) ->
-    if (second != null && first.isExact() && second.isExact() && first.duration != 0 &&
-            first.countAnds() >= second.countAnds() &&
-            minutesBetween(first.getStopTime(), second.getStartTime()) <= MIN_GAP) {
-        first.copy(tags = first.tags.filterNot { it.matches(STOP_REGEX) })
-    } else {
-        first
-    }
-}
-val MIN_GAP = 2
-
-fun Sequence<Record>.findOverlaps(): Unit {
-    val peeks = LinkedList<Record>()
-    val i = filter { it.isAction() }.iterator()
-    while (peeks.isNotEmpty() || i.hasNext()) {
-        val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
-        if (current.summary.endsWith("...")) continue
-        val numAnds = current.countAnds()
-        var next: Record? = null
-
-        // look through the window
-        for (record in peeks) {
-            if (record.countAnds() <= numAnds) {
-                next = record
-                break
-            }
-        }
-
-        // look down the sequence
-        if (next == null) {
-            while (i.hasNext()) {
-                val record = i.next()
-                peeks.add(record)
-                if (record.countAnds() <= numAnds) {
-                    next = record
-                    break
-                }
-            }
-        }
-        if (next != null && next.isExact() && next.getStartTime() < current.getStopTime()) {
-            println(current.formatHeader())
-            println(next.formatHeader())
-            println()
-        }
-    }
-}
-
-fun String_wrap_spec() {
-    "12345".wrap(1) returns "1\n2\n3\n4\n5"
-    "12345".wrap(2) returns "12\n34\n5"
-    "12345".wrap(5) returns "12345"
-    "12345".wrap(6) returns "12345"
-    "1\n2345".wrap(2) returns "1\n23\n45"
-    "12\n345".wrap(2) returns "12\n34\n5"
-    "12\n345".wrap(3) returns "12\n345"
-}
-fun String.wrap(width: Int): String {
-    var i = 0
-    return asSequence().fold(StringBuilder()) { acc, ch ->
-        if (i > 0 && i % width == 0 && ch != '\n') acc.append("\n")
-        if (ch == '\n') i = 0 else i++
-        acc.append(ch)
-    }.toString()
-}
-
-// export a record as an image flashcard suitable for nokia phones
-fun Record.makeFlashcard(i: Int) {
-    Runtime.getRuntime().exec(arrayOf(
-        "convert", "-size", "240x320", "xc:black",
-        "-font", "FreeMono-Bold", "-pointsize", "24",
-        "-fill", "white", "-annotate", "+12+24", ("$seq\n$summary " + tags.joinToString(" ")).wrap(15),
-        "-fill", "yellow", "-annotate", "+12+185", body.wrap(15),
-        "%04d.X00.png".format(i)))
-}
-
-// export a record as a text flashcard suitable for nokia phones
-fun Record.makeTextFlashcards(i: Int) {
-    File("%04d.txt".format(i)).writeText(seq + "\n" + summary + " " + tags.joinToString(" "))
-    File("%04d.00.txt".format(i)).writeText(seq + "\n" + body)
-}
-
-fun Record_sortTags_spec() {
-    Record("XXXXXXXX_XXXX").sortTags() returns Record("XXXXXXXX_XXXX")
-    Record("XXXXXXXX_XXXX", tags=listOf("@7")).sortTags() returns
-        Record("XXXXXXXX_XXXX", tags=listOf("@7"))
-    Record("XXXXXXXX_XXXX", tags=listOf("@7", "/1")).sortTags() returns
-        Record("XXXXXXXX_XXXX", tags=listOf("/1", "@7"))
-    Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns
-        Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1"))
-}
-fun Record.sortTags(): Record {
-    return this.copy(tags = tags.sortedWith { a, b ->
-        sortTagsOrder.indexOf(a[0]) - sortTagsOrder.indexOf(b[0])
-    })
-}
-val sortTagsOrder = "/+#!=>@:"
-
 fun String_compareSeq_spec() {
     "19990102_1000".compareSeq("19990102_0999") returns 1
     "19990102_1000".compareSeq("19990102_1000") returns 0
@@ -745,6 +703,101 @@ fun String.compareSeq(other: String) : Int {
     return 0
 }
 
+fun String_isHeader_spec() {
+    "00000000_0000 >|".isHeader() returns true
+    "0000XXXX_XXXX >|".isHeader() returns true
+    "0000XXXX_YYYY >|".isHeader() returns false
+    "20210120_2210 >|".isHeader() returns true
+    "20210120_2210 *|".isHeader() returns true
+    "20210120_2210 >| ".isHeader() returns true
+    "20210120_2210 >| hello world".isHeader() returns true
+    "20210120_2210 >| hello world\n".isHeader() returns true
+    "20210120_2210 >| hello world #truth".isHeader() returns true
+    "20210120_2210!>| hello world".isHeader() returns false
+    "20210120_2210>| hello world".isHeader() returns false
+    "20210120_2210   hello world".isHeader() returns false
+    "202101202210  >| hello world".isHeader() returns false
+    "foo".isHeader() returns false
+    "".isHeader() returns false
+}
+fun String.isHeader(): Boolean = matches(headerRegex);
+
+fun String.parse() = parse(reader().buffered())
+
+fun String_parseTags_spec() {
+    "".parseTags().isEmpty() returns true
+    "#foo".parseTags() returns listOf("#foo")
+    "nontag #foo".parseTags() returns listOf("#foo")
+    "#foo !bar".parseTags() returns listOf("#foo", "!bar")
+    "#foo !bar ".parseTags() returns listOf("#foo", "!bar")
+    " #foo !bar".parseTags() returns listOf("#foo", "!bar")
+    "#foo   !bar ".parseTags() returns listOf("#foo", "!bar")
+    "##foo !bar ".parseTags() returns listOf("##foo", "!bar")
+    "#foo bar !baz".parseTags() returns listOf("#foo bar", "!baz")
+    "#foo '#bar !baz".parseTags() returns listOf("#foo '#bar", "!baz")
+    "#foo bar !baz :https://wikipedia.org/foo".parseTags() returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
+    "#foo bar :https://wikipedia.org/foo !baz".parseTags() returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
+}
+fun String.parseTags(): List<String> {
+    var matches = tagStartRegex.findAll(this).toList()
+    return matches.mapIndexed { i, it ->
+        var stop = if (i < matches.lastIndex) matches[i + 1].range.start - 1 else lastIndex
+        slice(it.range.start..stop).trim()
+    }
+}
+
+fun String_parseRecord_spec() {
+    "XXXXXXXX_XXXX >|".parseRecord() returns Record("XXXXXXXX_XXXX")
+    "XXXXXXXX_XXXX +|".parseRecord() returns Record("XXXXXXXX_XXXX", rating="+")
+    "XXXXXXXX_XXXX >| hello world".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX >| hello world ".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world")
+    "XXXXXXXX_XXXX >| hello world!".parseRecord() returns Record("XXXXXXXX_XXXX", "hello world!")
+    "XXXXXXXX_XXXX >|  hello world".parseRecord() returns Record("XXXXXXXX_XXXX", " hello world")
+    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world #tag !bar".parseRecord().tags returns listOf("#tag", "!bar")
+    "XXXXXXXX_XXXX >| hello world  #tag !bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world #tag '!bar".parseRecord().summary returns "hello world"
+    "XXXXXXXX_XXXX >| hello world '#tag !bar".parseRecord().summary returns "hello world '#tag"
+    "XXXXXXXX_XXXX >| hello world '#tag' !bar".parseRecord().summary returns "hello world '#tag'"
+    "XXXXXXXX_XXXX >| hello & world".parseRecord().summary returns "hello & world"
+    "XXXXXXXX_XXXX >| hello & world #tag !bar".parseRecord().summary returns "hello & world"
+    "XXXXXXXX_XXXX >| 🩢🩣🩤 #tag !bar".parseRecord().summary returns "🩢🩣🩤"
+}
+fun String.parseRecord(body: String = ""): Record {
+    val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
+    val seq = slice(0..12)
+    val record = Record(
+        seq = seq,
+        summary = slice(17..tagIndex).trimEnd(),
+        rating = slice(14..14).trim(),
+        tags = drop(tagIndex + 1).parseTags(),
+        body = body,
+        exactSeq = if (seq.compareSeq(lastSeq) == 0) lastSeq else makeExactSeq(seq)
+    )
+    lastSeq = record.exactSeq // or record.getTaggedStopTime()?
+    return record
+}
+var lastSeq = ZERO_SEQ
+
+fun String_wrap_spec() {
+    "12345".wrap(1) returns "1\n2\n3\n4\n5"
+    "12345".wrap(2) returns "12\n34\n5"
+    "12345".wrap(5) returns "12345"
+    "12345".wrap(6) returns "12345"
+    "1\n2345".wrap(2) returns "1\n23\n45"
+    "12\n345".wrap(2) returns "12\n34\n5"
+    "12\n345".wrap(3) returns "12\n345"
+}
+fun String.wrap(width: Int): String {
+    var i = 0
+    return asSequence().fold(StringBuilder()) { acc, ch ->
+        if (i > 0 && i % width == 0 && ch != '\n') acc.append("\n")
+        if (ch == '\n') i = 0 else i++
+        acc.append(ch)
+    }.toString()
+}
+
+// export a record as an image flashcard suitable for nokia phones
 fun makeExactSeq_spec() {
     makeExactSeq("1999XXXX_XXXX") returns "19990101_0000"
     makeExactSeq("1999XXX9_XX99") returns "19990109_0099"
@@ -753,43 +806,8 @@ fun makeExactSeq(s: String) : String {
     return s.mapIndexed { i, c -> if (c.isLetter()) ZERO_SEQ[i] else c }.joinToString("")
 }
 
-fun Record.isIndented(): Boolean = summary.startsWith(" ")
-fun Record.isAction(): Boolean = !summary.startsWith(" ")
-fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
-fun Record.isBackgroundAction(): Boolean = isAction() && summary.startsWith("& ") || summary.startsWith("and ")
-fun Record.countAnds(): Int  {
-    if (summary.startsWith("and and ") || summary.startsWith("&& ")) return 2
-    if (summary.startsWith("and ") || summary.startsWith("& ")) return 1
-    return 0
-}
-
-fun Record_isInstant_spec() {
-    Record("20000101_0000").isInstant() returns false
-    Record("20000101_0000", tags=listOf("/run")).isInstant() returns false
-    Record("20000101_0000", tags=listOf("/run", "+45")).isInstant() returns false
-    Record("20000101_0000", tags=listOf("/fail!")).isInstant() returns true
-    Record("20000101_0000", tags=listOf("@office", "/fail!")).isInstant() returns true
-}
-fun Record.isInstant(): Boolean {
-    tags.forEach { if (it.matches(instantRegex)) return true }
-    return false
-}
-val instantRegex = Regex("/.*!")
-
 fun minutesBetween(a: LocalDateTime, b: LocalDateTime): Long = Math.abs(MINUTES.between(a, b))
 
-fun Record.removeStopTag(): Record = copy(tags = tags.filterNot { it.matches(STOP_REGEX) })
-fun Record.replaceStopTag(stop: String): Record = copy(tags = tags.map { if (it.matches(STOP_REGEX)) stop else it })
-val STOP_REGEX = Regex("(\\+[0-9]{4})")
-
-fun Record.formatStopTag(): String = stopTagFormat.format(getStartTime().plusMinutes(duration.toLong()))
-fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
-fun Record.formatNaked(): String = "${seq} !| ${summary.lowercase()}"
-fun Record.formatTimes(): String = "${seq} !| ${formatStopTag().drop(1)}"
-fun Record.formatAsTimelog(): String = "${seq} !| ${summary.lowercase()} ${formatStopTag()}"
-fun Sequence<Record>.filter(args: Array<String>): Sequence<Record> = if (args.size > 1) filter { it.tags.contains(args[1]) } else this
-
-// simple test functions, since kotlin.test is not on the default classpath
 fun test() = ::main.javaClass.enclosingClass.declaredMethods.filter { it.name.endsWith("_spec") }.forEach { it(null) }
 infix fun Any?.returns(result: Any?) { if (this != result) throw AssertionError("Expected: $result, got $this") }
 infix fun (() -> Any).throws(ex: kotlin.reflect.KClass<out Throwable>) {
