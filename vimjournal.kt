@@ -1,5 +1,5 @@
 //usr/bin/env [ $0 -nt $0.jar ] && kotlinc -d $0.jar $0; [ $0.jar -nt $0 ] && kotlin -cp $0.jar VimjournalKt "$@"; exit 0
-// vim: foldmethod=expr foldexpr=getline(v\:lnum+1)[0\:3]=='fun\ '?'<1'\:1 foldtext=getline(v\:foldstart) fillchars=fold\:\ 
+// vim: foldmethod=expr foldexpr=getline(v\:lnum)[0\:3]=='fun\ '?'>1'\:1 foldtext=getline(v\:foldstart) fillchars=fold\:\ 
 
 import java.io.InputStream
 import java.io.File
