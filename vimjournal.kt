@@ -743,7 +743,7 @@ fun Record.isAction(): Boolean = !summary.startsWith(" ")
 fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
 fun Record.isBackgroundAction(): Boolean = isAction() && summary.startsWith("& ") || summary.startsWith("and ")
 fun Record.countAnds(): Int  {
-    if (summary.startsWith("and and ") || summary.startsWith("& & ")) return 2
+    if (summary.startsWith("and and ") || summary.startsWith("&& ")) return 2
     if (summary.startsWith("and ") || summary.startsWith("& ")) return 1
     return 0
 }
