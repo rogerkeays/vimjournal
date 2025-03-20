@@ -169,6 +169,13 @@ function DisplayVimjournalQuickfixTab()
 endfunction
 autocmd FileType vimjournal hi QuickFixLine ctermbg=None
 
+" sort the quickfix list by date and update the view
+function SortByDate()
+  call setqflist(sort(getqflist(), { x, y -> y.text[0:13] < x.text[0:13] }))
+  call DisplayVimjournalQuickfixTab()
+endfunction
+autocmd FileType vimjournal command! DateSort call SortByDate()
+
 " sort the quickfix list by stars and update the view
 function SortByStars()
   call setqflist(sort(getqflist(), { x, y -> y.text[14]->ToStars() - x.text[14]->ToStars() }))
