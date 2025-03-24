@@ -14,20 +14,8 @@ import java.util.LinkedHashMap
 import java.util.NoSuchElementException
 
 // constants
-val MIN_GAP = 2
-val ratingChars = "->x=~+*.!"
-val tagChars = "/+#=!>@:"
-val sortTagsOrder = "/+#!=>@:"
 val ZERO_SEQ = "00010101_0000"
-val linefeed = System.getProperty("line.separator")
-val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
-val excludeTagRegex = Regex("^\\+[0-9]+")
-val headerRegex = Regex("^[0-9X_]{13} [$ratingChars]\\|.*\n?$")
-val instantRegex = Regex("/.*!")
 val STOP_REGEX = Regex("(\\+[0-9]{4})")
-val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
-val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
-val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 // data structures
 data class Record(
@@ -236,6 +224,7 @@ fun InputStream.parse(): Sequence<Record> {
     "XXXXXXXX_XXXX >| hello world\n\nbody #notag goes here\n".parse().first().tags.isEmpty() returns true
     "// vim: modeline\nXXXXXXXX_XXXX >| hello world\nbody\n".parse().first().summary returns "hello world"
 }
+val linefeed = System.getProperty("line.separator")
 
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
@@ -308,6 +297,7 @@ fun Record.getTaggedStopTime(): LocalDateTime {
     Record("19990101_XXXX", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
     Record("19990101_2330", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
 }
+val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
 fun Record.getTime(): LocalDateTime {
     return LocalDateTime.parse(exactSeq, dateTimeFormat)
@@ -316,6 +306,7 @@ fun Record.getTime(): LocalDateTime {
     Record("20000101_XXXX").getTime() returns LocalDateTime.of(2000, 1, 1, 0, 0)
     Record("XXXXXXXX_XXXX").getTime() returns LocalDateTime.of(1, 1, 1, 0, 0)
 }
+val dateTimeFormat = DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")
 
 fun Record.getStartTime(): LocalDateTime {
     // inexact dates are treated as starting at midnight so that stop times can be expressed as a duration
@@ -338,6 +329,7 @@ fun Record.isExact(): Boolean {
     Record("20000101_XXXX").isExact() returns false
     Record("XXXXXXXX_XXXX").isExact() returns false
 }
+val exactDateTimeRegex = Regex("[0-9]{8}_[0-9]{4}")
 
 fun Record.isForegroundAction(): Boolean = isAction() && !isBackgroundAction()
 
@@ -353,6 +345,7 @@ fun Record.isInstant(): Boolean {
     Record("20000101_0000", tags=listOf("/fail!")).isInstant() returns true
     Record("20000101_0000", tags=listOf("@office", "/fail!")).isInstant() returns true
 }
+val instantRegex = Regex("/.*!")
 
 fun Record.makeFlashcard(i: Int) {
     // export a record as an image flashcard suitable for nokia phones
@@ -395,6 +388,7 @@ fun Record.sortTags(): Record {
     Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1")).sortTags() returns
         Record("XXXXXXXX_XXXX", tags=listOf("@2", "@1"))
 }
+val sortTagsOrder = "/+#!=>@:"
 
 fun <T> Sequence<T>.pairs(): Sequence<Pair<T, T?>> {
     val i = iterator()
@@ -495,6 +489,7 @@ fun Sequence<Record>.stripStopTags(): Sequence<Record> {
          Record("XXXXXXXX_XXXX"))
         .stripStopTags().first().tags.contains("+0000") returns true
 }
+val MIN_GAP = 2
 
 fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): Map<String, Int> {
     var totals = mutableMapOf<String, Int>().toSortedMap()
@@ -558,6 +553,7 @@ fun Sequence<Record>.sumDurationsByTag(filter: (Record) -> Boolean = { true }): 
          Record("20000102_1400", tags=listOf("/trawl")))
         .sumDurationsByTag()["=p3"] returns 150
 }
+val excludeTagRegex = Regex("^\\+[0-9]+")
 
 fun Sequence<Record>.sumDurationsByTagFor(tagChar: Char): Map<String, Int> {
     return sumDurationsByTag { record -> record.tags.find { it.startsWith(tagChar) } != null }
@@ -718,6 +714,8 @@ fun String.isHeader(): Boolean {
     "foo".isHeader() returns false
     "".isHeader() returns false
 }
+val ratingChars = "->x=~+*.!"
+val headerRegex = Regex("^[0-9X_]{13} [$ratingChars]\\|.*\n?$")
 
 fun String.parse(): Sequence<Record> = byteInputStream().parse()
 
@@ -741,6 +739,8 @@ fun String.parseTags(): List<String> {
     "#foo bar !baz :https://wikipedia.org/foo".parseTags() returns listOf("#foo bar", "!baz", ":https://wikipedia.org/foo")
     "#foo bar :https://wikipedia.org/foo !baz".parseTags() returns listOf("#foo bar", ":https://wikipedia.org/foo", "!baz")
 }
+val tagChars = "/+#=!>@:"
+val tagStartRegex = Regex("(^| )[$tagChars](?=([^ |>]| +[$tagChars]| *$))")
 
 fun String.parseRecord(body: String = ""): Record {
     val tagIndex = tagStartRegex.find(this)?.range?.start ?: lastIndex
