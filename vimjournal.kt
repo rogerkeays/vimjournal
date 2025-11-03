@@ -15,7 +15,7 @@ import java.util.NoSuchElementException
 
 // constants
 val ZERO_SEQ = "00010101_0000"
-val STOP_REGEX = Regex("(\\+[0-9]{4})")
+val STOP_REGEX = Regex("(\\+[0-9]{4})!?")
 
 // data structures
 data class Record(
@@ -286,7 +286,7 @@ fun Record.getTaggedStopTime(): LocalDateTime {
     return if (stopTag == null) {
         startTime
     } else {
-        val stopTime = LocalTime.parse(stopTag, stopTagFormat)
+        val stopTime = LocalTime.parse(stopTag.replace("!", ""), stopTagFormat)
         val plusDays = if (startTime.toLocalTime().isAfter(stopTime)) 1L else 0L
         LocalDateTime.of(startTime.toLocalDate(), stopTime).plusDays(plusDays)
     }
@@ -296,6 +296,7 @@ fun Record.getTaggedStopTime(): LocalDateTime {
     Record("19990101_0100", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
     Record("19990101_XXXX", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 1, 10, 0)
     Record("19990101_2330", tags=listOf("+1000")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
+    Record("19990101_2330", tags=listOf("+1000!")).getTaggedStopTime() returns LocalDateTime.of(1999, 1, 2, 10, 0)
 }
 val stopTagFormat = DateTimeFormatter.ofPattern("+HHmm")
 
@@ -315,6 +316,8 @@ fun Record.getStartTime(): LocalDateTime {
 }
 
 fun Record.getStopTime(): LocalDateTime = getStartTime().plusMinutes(duration.toLong())
+
+fun Record.hasOverlappingStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) && it.endsWith("!") }
 
 fun Record.hasStopTag(): Boolean = tags.any { it.matches(STOP_REGEX) }
 
@@ -418,7 +421,7 @@ fun Sequence<Record>.findOverlaps(): Unit {
     val i = filter { it.isAction() }.iterator()
     while (peeks.isNotEmpty() || i.hasNext()) {
         val current = if (peeks.isNotEmpty()) peeks.remove() else i.next()
-        if (current.summary.endsWith("...")) continue
+        if (current.hasOverlappingStopTag()) continue
         val numAnds = current.countAnds()
         var next: Record? = null
 
