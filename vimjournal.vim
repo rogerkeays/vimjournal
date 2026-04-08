@@ -17,9 +17,10 @@ autocmd BufRead,BufNewFile *.log setl filetype=vimjournal
 
 " presentation and code folding
 autocmd FileType vimjournal setl autoindent sw=2 ts=8 nrformats=
-autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=\\|\ 
-autocmd FileType vimjournal setl foldmethod=manual foldtext=getline(v:foldstart-1) fillchars=fold:\ 
+autocmd FileType vimjournal setl nowrap linebreak breakindent showbreak=               \|  
 autocmd FileType vimjournal setl foldexpr=getline(v\:lnum)[15]=='\|'?'0'\:1 " imprecise, but fast
+autocmd FileType vimjournal setl foldtext=getline(v:foldstart-1)[0:14].'\\'.getline(v:foldstart-1)[16:]
+autocmd FileType vimjournal setl foldmethod=manual fillchars=fold:\ 
 "autocmd FileType vimjournal setl foldexpr=strcharpart(getline(v\:lnum+1),14,2)=~'[-x=+*>]\|'?'<1'\:1
 
 " keyboard shortcuts
@@ -49,6 +50,7 @@ autocmd BufRead *.log syn match ThreeStar `^[0-9X]\{8\}_[0-9X]\{4\} [=3]|.*$` co
 autocmd BufRead *.log syn match FourStar `^[0-9X]\{8\}_[0-9X]\{4\} [+4]|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match FiveStar `^[0-9X]\{8\}_[0-9X]\{4\} [*5]|.*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Check `^[0-9X]\{8\}_[0-9X]\{4\} !|.*$` contains=Bar,Date,Tags
+autocmd BufRead *.log syn match Sleep `^[0-9X]\{8\}_[0-9X]\{4\} .| .*/sleep .*$` contains=Bar,Date,Tags
 autocmd BufRead *.log syn match Heading `^==[^ ].*$`
 autocmd BufRead *.log syn match Heading `^## .*$`
 autocmd BufRead *.log syn match Comments `^//.*$`
@@ -67,6 +69,7 @@ autocmd FileType vimjournal hi ThreeStar ctermfg=darkcyan
 autocmd FileType vimjournal hi FourStar ctermfg=cyan
 autocmd FileType vimjournal hi FiveStar ctermfg=white
 autocmd FileType vimjournal hi Check ctermfg=yellow
+autocmd FileType vimjournal hi Sleep ctermfg=darkgreen
 autocmd FileType vimjournal hi Heading ctermfg=white
 autocmd FileType vimjournal hi Comments ctermfg=lightgreen
 autocmd FileType vimjournal hi Reference ctermfg=lightyellow
