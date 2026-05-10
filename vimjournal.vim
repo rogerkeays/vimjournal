@@ -168,7 +168,7 @@ function DisplayVimjournalQuickfixTab()
     $tabnext
     normal 1G
   endif
-  syn match metadata /^.*|[0-9]\+ col [-0-9]\+| / transparent conceal
+  syn match metadata /^.*|[0-9]\+ col [-0-9]\+| / conceal
 endfunction
 autocmd FileType vimjournal hi QuickFixLine ctermbg=None
 
