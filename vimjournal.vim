@@ -138,7 +138,7 @@ function GrepIndentedHeaders(regexp, files)
   call DisplayVimjournalQuickfixTab()
 endfunction
 function GrepOutdentedHeaders(regexp, files)
-  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\} .| [^ ].*'.a:regexp.'`j '.a:files
+  execute 'vimgrep `^[0-9X]\{8\}_[0-9X]\{4\} .| [^ ]\@=.*'.a:regexp.'`j '.a:files
   call DisplayVimjournalQuickfixTab()
 endfunction
 function GrepContent(regexp, files)
