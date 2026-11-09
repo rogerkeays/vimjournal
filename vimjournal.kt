@@ -229,8 +229,8 @@ val linefeed = System.getProperty("line.separator")
 fun <T> Iterator<T>.nextOrNull() = if (hasNext()) next() else null
 
 fun Record.countAnds(): Int  {
-    if (summary.startsWith("and and ") || summary.startsWith("&& ")) return 2
-    if (summary.startsWith("and ") || summary.startsWith("& ")) return 1
+    if (summary.startsWith("and also ")) return 2
+    if (summary.startsWith("and ")) return 1
     return 0
 }
 
