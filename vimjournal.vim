@@ -184,9 +184,6 @@ function SortByStars()
   call setqflist(sort(getqflist(), { x, y -> y.text[14]->ToStars() - x.text[14]->ToStars() }))
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! StarSort call SortByStars()
-
-" convert a text character to the number of stars represented by that character
 function ToStars(char)
   if a:char == '*' || a:char == '5' | return 5
   elseif a:char == '+' || a:char == '4' | return 4
@@ -195,6 +192,7 @@ function ToStars(char)
   elseif a:char == 'x' || a:char == '1' | return 1
   else | return 0 | endif
 endfunction
+autocmd FileType vimjournal command! StarSort call SortByStars()
 
 " sort the quickfix list by title and update the view
 function SortByTitle()
@@ -208,12 +206,20 @@ function SortByRef()
   call setqflist(sort(getqflist(), { x, y -> y.text->GetRef() < x.text->GetRef() }))
   call DisplayVimjournalQuickfixTab()
 endfunction
-autocmd FileType vimjournal command! RefSort call SortByRef()
-
-" extract the first reference tag starting with a :
 function GetRef(text)
   return a:text->matchstr(" :[^ ]\\+")
 endfunction
+autocmd FileType vimjournal command! RefSort call SortByRef()
+
+" sort the quickfix list by slash tag and update the view
+function SortBySlash()
+  call setqflist(sort(getqflist(), { x, y -> y.text->GetSlashTag() < x.text->GetSlashTag() }))
+  call DisplayVimjournalQuickfixTab()
+endfunction
+function GetSlashTag(text)
+  return a:text->matchstr(" /[^ ]\\+")
+endfunction
+autocmd FileType vimjournal command! SlashSort call SortBySlash()
 
 " execute commands on header lines
 autocmd FileType vimjournal command! -nargs=1 Headers g`^[0-9X]\{8}_[0-9X]\{4} .|`<args>
